@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTC — Stoc Haine</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface2: #1e1e1e;
+  --border: #2a2a2a;
+  --accent: #e8c547;
+  --accent2: #c9a92e;
+  --red: #e84747;
+  --green: #47c97a;
+  --text: #f0f0f0;
+  --muted: #666;
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ===== AUTH SCREEN ===== */
+#auth-screen {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 30% 50%, #1a1500 0%, #0a0a0a 70%);
+}
+.auth-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent);
+  padding: 48px 40px;
+  width: 100%; max-width: 420px;
+  border-radius: 4px;
+}
+.auth-logo {
+  font-family: var(--font-display);
+  font-size: 52px;
+  letter-spacing: 6px;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.auth-subtitle {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 36px;
+}
+.auth-field { margin-bottom: 16px; }
+.auth-field label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.auth-field input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+.auth-field input:focus { outline: none; border-color: var(--accent); }
+.auth-select {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 13px 14px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  transition: border-color 0.2s;
+  appearance: none;
+  cursor: pointer;
+}
+.auth-select:focus { outline: none; border-color: var(--accent); }
+.auth-select option { background: var(--surface2); }
+.auth-switch {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.2s;
+  letter-spacing: 0.5px;
+}
+.auth-switch:hover { color: var(--accent); }
+.btn-primary {
+  width: 100%;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  padding: 14px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 3px;
+  cursor: pointer;
+  border-radius: 3px;
+  margin-top: 8px;
+  transition: background 0.2s, transform 0.1s;
+}
+.btn-primary:hover { background: var(--accent2); }
+.btn-primary:active { transform: scale(0.98); }
+.auth-error {
+  color: var(--red);
+  font-size: 12px;
+  margin-top: 12px;
+  text-align: center;
+  min-height: 16px;
+}
+
+/* ===== MAIN APP ===== */
+#app { display: none; }
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px;
+  position: sticky; top: 0; z-index: 100;
+}
+.logo {
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: 5px;
+  color: var(--accent);
+}
+.header-right { display: flex; align-items: center; gap: 16px; }
+.user-badge {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.user-role {
+  background: var(--accent);
+  color: #000;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+.user-role.viewer { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+.btn-logout {
+  background: none; border: 1px solid var(--border);
+  color: var(--muted); padding: 6px 14px;
+  border-radius: 3px; cursor: pointer; font-size: 12px;
+  transition: all 0.2s;
+}
+.btn-logout:hover { border-color: var(--red); color: var(--red); }
+
+/* ===== NAV TABS ===== */
+.nav-tabs {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; gap: 0;
+  padding: 0 24px;
+  overflow-x: auto;
+}
+.nav-tab {
+  padding: 14px 20px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+  user-select: none;
+}
+.nav-tab:hover { color: var(--text); }
+.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ===== MAIN CONTENT ===== */
+.content { padding: 24px; max-width: 1400px; margin: 0 auto; }
+.section { display: none; }
+.section.active { display: block; }
+
+/* ===== STOC TABLE ===== */
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px; flex-wrap: gap;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  letter-spacing: 3px;
+}
+.btn-action {
+  background: var(--accent);
+  color: #000;
+  border: none;
+  padding: 10px 20px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+.btn-action:hover { background: var(--accent2); }
+.btn-danger {
+  background: var(--red);
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.btn-secondary {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 10px 20px;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+.stoc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.stoc-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.stoc-card:hover { border-color: var(--accent); }
+.stoc-card-header {
+  background: var(--surface2);
+  padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.stoc-card-name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: 2px;
+}
+.stoc-sizes {
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.size-cell {
+  text-align: center;
+}
+.size-label {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.size-qty {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text);
+}
+.size-qty.low { color: var(--red); }
+.size-qty.ok { color: var(--green); }
+.size-qty.zero { color: var(--muted); }
+
+/* ===== TABLE ===== */
+.table-wrap { overflow-x: auto; border-radius: 4px; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; background: var(--surface); }
+thead { background: var(--surface2); }
+th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+td {
+  padding: 12px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
+.badge-size {
+  display: inline-block;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 1000;
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent);
+  border-radius: 4px;
+  width: 100%; max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: 2px;
+}
+.modal-close {
+  background: none; border: none;
+  color: var(--muted); cursor: pointer;
+  font-size: 20px; padding: 4px;
+  transition: color 0.2s;
+}
+.modal-close:hover { color: var(--red); }
+.modal-body { padding: 24px; }
+.form-field { margin-bottom: 18px; }
+.form-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.form-input, .form-select {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 11px 14px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  transition: border-color 0.2s;
+  appearance: none;
+}
+.form-input:focus, .form-select:focus { outline: none; border-color: var(--accent); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modal-footer {
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 10px; justify-content: flex-end;
+}
+
+/* ===== DISTRIBUIRE SECTION ===== */
+.distribute-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 768px) {
+  .distribute-wrap { grid-template-columns: 1fr; }
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 24px;
+}
+.card-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+}
+
+/* ===== TOAST ===== */
+#toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--green);
+  padding: 14px 20px;
+  border-radius: 4px;
+  font-size: 13px;
+  max-width: 300px;
+  z-index: 9999;
+  transform: translateX(120%);
+  transition: transform 0.3s ease;
+  pointer-events: none;
+}
+#toast.show { transform: translateX(0); }
+#toast.error { border-left-color: var(--red); }
+
+/* ===== ANGAJATI ===== */
+.angajat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.angajat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
+}
+.angajat-name { font-size: 13px; font-weight: 500; }
+.angajat-dept { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* Stats */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px 20px;
+}
+.stat-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 36px;
+  color: var(--accent);
+}
+
+/* Search */
+.search-bar {
+  display: flex; gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.search-input {
+  flex: 1; min-width: 200px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+.search-input:focus { outline: none; border-color: var(--accent); }
+
+/* Responsive */
+@media (max-width: 600px) {
+  .content { padding: 12px; }
+  .stoc-grid { grid-template-columns: 1fr; }
+  .section-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  header { padding: 0 12px; }
+  .logo { font-size: 22px; }
+}
+
+/* Loading */
+.loading {
+  text-align: center; padding: 60px;
+  color: var(--muted); font-size: 13px;
+  letter-spacing: 2px; text-transform: uppercase;
+}
+
+.dot-pulse::after {
+  content: '';
+  animation: dots 1.5s infinite;
+}
+@keyframes dots {
+  0% { content: ''; }
+  33% { content: '.'; }
+  66% { content: '..'; }
+  100% { content: '...'; }
+}
+
+/* Admin-only elements — ascunse implicit */
+.admin-only { display: none !important; }
+.admin-only.visible { display: '' !important; }
+
+/* Qty badge */
+.qty-tag {
+  display: inline-block;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo" style="font-size:36px;letter-spacing:3px;">MTC STOC HAINE</div>
+    <div class="auth-subtitle">Gestiune Stoc Haine</div>
+
+    <!-- OPERATOR LOGIN (default) -->
+    <div id="operator-login">
+      <div class="auth-field">
+        <label>Selectează utilizatorul tău</label>
+        <select class="auth-select" id="operator-select">
+          <option value="">— Cine ești? —</option>
+          <option value="operator1">Cristi</option>
+          <option value="operator2">Mihaela</option>
+          <option value="operator3">Raluca</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="doOperatorLogin()">INTRĂ</button>
+      <div class="auth-switch" onclick="toggleAdminLogin()">🔐 Sunt administratorul</div>
+    </div>
+
+    <!-- ADMIN LOGIN (hidden by default) -->
+    <div id="admin-login" style="display:none;">
+      <div class="auth-field">
+        <label>Email Admin</label>
+        <input type="email" id="login-email" placeholder="adresa ta de email" autocomplete="username">
+      </div>
+      <div class="auth-field">
+        <label>Parolă</label>
+        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn-primary" onclick="doAdminLogin()">INTRĂ CA ADMIN</button>
+      <div class="auth-switch" onclick="toggleAdminLogin()">← Înapoi la selecție operator</div>
+    </div>
+
+    <div class="auth-error" id="auth-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="logo" style="font-size:20px;letter-spacing:3px;">MTC STOC HAINE</div>
+    <div class="header-right">
+      <div class="user-badge">
+        <span id="header-username">—</span>
+        <span class="user-role" id="header-role">—</span>
+      </div>
+      <button class="btn-logout admin-only" onclick="doLogout()">Ieșire</button>
+    </div>
+  </header>
+
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="showSection('stoc', this)">📦 Stoc</div>
+    <div class="nav-tab" onclick="showSection('distribuire', this)">🎁 Distribuire</div>
+    <div class="nav-tab" onclick="showSection('istoric', this)">📋 Istoric</div>
+    <div class="nav-tab admin-only" onclick="showSection('angajati', this)">👥 Angajați</div>
+    <div class="nav-tab admin-only" onclick="showSection('adaugari', this)">📥 Adăugări Stoc</div>
+    <div class="nav-tab admin-only" onclick="showSection('admin', this)">⚙️ Admin</div>
+  </div>
+
+  <div class="content">
+
+    <!-- STOC -->
+    <div class="section active" id="section-stoc">
+      <div class="section-header">
+        <div class="section-title">STOC CURENT</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn-action admin-only" onclick="openModal('modal-add-stoc')">+ ADAUGĂ STOC</button>
+          <button class="btn-secondary admin-only" onclick="openModal('modal-corecteaza-stoc')" style="border-color:var(--red);color:var(--red);">✏ CORECTEAZĂ STOC</button>
+          <button class="btn-action admin-only" onclick="openModal('modal-add-haina')">+ ARTICOL NOU</button>
+        </div>
+      </div>
+      <div class="stats-row" id="stats-row"></div>
+      <div id="stoc-grid" class="stoc-grid"><div class="loading">Se încarcă<span class="dot-pulse"></span></div></div>
+    </div>
+
+    <!-- DISTRIBUIRE -->
+    <div class="section" id="section-distribuire">
+      <div class="section-title" style="margin-bottom:20px;">DISTRIBUIRE HAINE</div>
+      <div class="distribute-wrap">
+        <div class="card">
+          <div class="card-title">OFERĂ HAINE</div>
+          <div class="form-field">
+            <label class="form-label">Angajat</label>
+            <select class="form-select" id="dist-angajat">
+              <option value="">— Selectează angajat —</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label">Articol</label>
+              <select class="form-select" id="dist-haina" onchange="updateSizeOptions()">
+                <option value="">— Articol —</option>
+              </select>
+            </div>
+            <div class="form-field" id="dist-marime-row">
+              <label class="form-label">Mărime</label>
+              <select class="form-select" id="dist-marime">
+                <option value="">— Mărime —</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Cantitate</label>
+            <input type="number" class="form-input" id="dist-qty" value="1" min="1" max="50">
+          </div>
+          <div id="dist-stoc-info" style="font-size:12px;color:var(--muted);margin-bottom:16px;min-height:16px;"></div>
+          <button class="btn-action" style="width:100%;" onclick="distribuieHaine()">DISTRIBUIE</button>
+        </div>
+        <div class="card">
+          <div class="card-title">DISTRIBUIRI RECENTE</div>
+          <div id="distribuiri-recente"><div class="loading" style="padding:20px;">Se încarcă<span class="dot-pulse"></span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ISTORIC -->
+    <div class="section" id="section-istoric">
+      <div class="section-header">
+        <div class="section-title">ISTORIC DISTRIBUIRI</div>
+        <button class="btn-secondary" onclick="exportCSV()">⬇ Export CSV</button>
+      </div>
+      <div class="search-bar">
+        <input class="search-input" type="text" id="search-istoric" placeholder="Caută după nume, articol..." oninput="filterIstoric()">
+        <select class="form-select" style="width:auto;" id="filter-haina" onchange="filterIstoric()">
+          <option value="">Toate articolele</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Data</th><th>Ora</th><th>Angajat</th><th>Articol</th><th>Mărime</th><th>Cant.</th><th>Operator</th>
+          </tr></thead>
+          <tbody id="istoric-tbody"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px;">Se încarcă...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ANGAJATI -->
+    <div class="section admin-only" id="section-angajati">
+      <div class="section-header">
+        <div class="section-title">ANGAJAȚI</div>
+        <button class="btn-action" onclick="openModal('modal-add-angajat')">+ ANGAJAT NOU</button>
+      </div>
+      <div class="search-bar">
+        <input class="search-input" type="text" id="search-angajati" placeholder="Caută angajat..." oninput="filterAngajati()">
+      </div>
+      <div id="angajati-grid" class="angajat-grid"><div class="loading">Se încarcă<span class="dot-pulse"></span></div></div>
+    </div>
+
+    <!-- ADAUGARI STOC -->
+    <div class="section admin-only" id="section-adaugari">
+      <div class="section-header">
+        <div class="section-title">ADĂUGĂRI STOC</div>
+        <button class="btn-secondary" onclick="exportCSVAdaugari()">⬇ Export CSV</button>
+      </div>
+      <div class="search-bar">
+        <input class="search-input" type="text" id="search-adaugari" placeholder="Caută după articol, observații..." oninput="filterAdaugari()">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Data</th><th>Ora</th><th>Articol</th><th>Mărime</th><th>Cantitate</th><th>Observații</th>
+          </tr></thead>
+          <tbody id="adaugari-tbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;">Se încarcă...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="section admin-only" id="section-admin">
+      <div class="section-title" style="margin-bottom:20px;">ADMINISTRARE</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;">
+        <div class="card">
+          <div class="card-title" style="font-size:18px;">GESTIONARE OPERATORI</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Deconectează un operator de pe telefonul lui</p>
+          <div id="operators-admin-list">
+            <div id="op-row-operator1" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+              <div>
+                <div style="font-size:13px;font-weight:600;">Cristi</div>
+                <div id="op-status-operator1" style="font-size:11px;color:var(--muted);">Verificare...</div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-danger" onclick="forceLogoutOperator('operator1','Cristi')">Deconectează</button>
+                <button class="btn-secondary" style="padding:6px 10px;font-size:12px;" onclick="cancelForceLogout('operator1','Cristi')">Anulează</button>
+              </div>
+            </div>
+            <div id="op-row-operator2" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+              <div>
+                <div style="font-size:13px;font-weight:600;">Mihaela</div>
+                <div id="op-status-operator2" style="font-size:11px;color:var(--muted);">Verificare...</div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-danger" onclick="forceLogoutOperator('operator2','Mihaela')">Deconectează</button>
+                <button class="btn-secondary" style="padding:6px 10px;font-size:12px;" onclick="cancelForceLogout('operator2','Mihaela')">Anulează</button>
+              </div>
+            </div>
+            <div id="op-row-operator3" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
+              <div>
+                <div style="font-size:13px;font-weight:600;">Raluca</div>
+                <div id="op-status-operator3" style="font-size:11px;color:var(--muted);">Verificare...</div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-danger" onclick="forceLogoutOperator('operator3','Raluca')">Deconectează</button>
+                <button class="btn-secondary" style="padding:6px 10px;font-size:12px;" onclick="cancelForceLogout('operator3','Raluca')">Anulează</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="font-size:18px;">MĂRIMI DISPONIBILE</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Mărimi active în sistem</p>
+          <div id="marimi-list" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="font-size:18px;">IMPORT DATE INIȚIALE</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Importă hainele și angajații din Excel în Firebase.</p>
+          <p style="font-size:11px;color:var(--red);margin-bottom:16px;">⚠️ Apasă o singură dată! Verifică mai întâi că stocul e gol.</p>
+          <button class="btn-action" style="width:100%;font-size:20px;padding:16px;" onclick="seedData()">⬆ IMPORTĂ DATE DIN EXCEL</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODALS -->
+
+<!-- Add Stoc Modal -->
+<div class="modal-overlay" id="modal-add-stoc">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">ADAUGĂ STOC</div>
+      <button class="modal-close" onclick="closeModal('modal-add-stoc')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label">Articol</label>
+        <select class="form-select" id="stoc-haina" onchange="updateStocModalMarime()">
+          <option value="">— Selectează —</option>
+        </select>
+      </div>
+      <div class="form-row" id="stoc-marime-row">
+        <div class="form-field">
+          <label class="form-label">Mărime</label>
+          <select class="form-select" id="stoc-marime">
+            <option value="">— Mărime —</option>
+            <option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Cantitate de adăugat</label>
+          <input type="number" class="form-input" id="stoc-qty" value="1" min="1">
+        </div>
+      </div>
+      <div class="form-field" id="stoc-qty-only" style="display:none;">
+        <label class="form-label">Cantitate de adăugat</label>
+        <input type="number" class="form-input" id="stoc-qty-fara" value="1" min="1">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Observații (opțional)</label>
+        <input type="text" class="form-input" id="stoc-obs" placeholder="ex: comandă octombrie, furnizor X...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-add-stoc')">Anulează</button>
+      <button class="btn-action" onclick="adaugaStoc()">ADAUGĂ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Haina Modal -->
+<div class="modal-overlay" id="modal-corecteaza-stoc">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">CORECTEAZĂ STOC</div>
+      <button class="modal-close" onclick="closeModal('modal-corecteaza-stoc')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Setează cantitatea exactă — folosește când stocul real diferă de cel din sistem.</p>
+      <div class="form-field">
+        <label class="form-label">Articol</label>
+        <select class="form-select" id="cor-haina" onchange="updateCorectareMarime()">
+          <option value="">— Selectează —</option>
+        </select>
+      </div>
+      <div class="form-field" id="cor-marime-row">
+        <label class="form-label">Mărime</label>
+        <select class="form-select" id="cor-marime" onchange="updateCorectareStocCurent()">
+          <option value="">— Mărime —</option>
+          <option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Stoc actual în sistem</label>
+        <div id="cor-stoc-curent" style="font-family:var(--font-mono);font-size:24px;color:var(--accent);padding:8px 0;">—</div>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Cantitate corectă (număr real)</label>
+        <input type="number" class="form-input" id="cor-qty" min="0" placeholder="ex: 5">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Motiv corecție</label>
+        <input type="text" class="form-input" id="cor-motiv" placeholder="ex: inventar, pierdere, eroare...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-corecteaza-stoc')">Anulează</button>
+      <button class="btn-action" style="background:var(--red);" onclick="corecteazaStoc()">SETEAZĂ CANTITATEA</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Haina Modal -->
+<div class="modal-overlay" id="modal-add-haina">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">ARTICOL NOU</div>
+      <button class="modal-close" onclick="closeModal('modal-add-haina')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label">Denumire articol</label>
+        <input type="text" class="form-input" id="haina-name" placeholder="ex: TRICOU, BLUZA, JACHETĂ...">
+      </div>
+      <p style="font-size:12px;color:var(--muted);">Articolul va fi creat cu stoc 0 pentru toate mărimile (XS, S, M, L, XL). Adaugă cantitățile după.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-add-haina')">Anulează</button>
+      <button class="btn-action" onclick="adaugaHaina()">CREEAZĂ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Angajat Modal -->
+<div class="modal-overlay" id="modal-add-angajat">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">ANGAJAT NOU</div>
+      <button class="modal-close" onclick="closeModal('modal-add-angajat')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label">Nume Prenume</label>
+        <input type="text" class="form-input" id="ang-name" placeholder="ex: Popescu Ion">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Departament (opțional)</label>
+        <input type="text" class="form-input" id="ang-dept" placeholder="ex: Depozit, Producție...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-add-angajat')">Anulează</button>
+      <button class="btn-action" onclick="adaugaAngajat()">ADAUGĂ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Angajat Modal -->
+<div class="modal-overlay" id="modal-edit-angajat">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">EDITEAZĂ ANGAJAT</div>
+      <button class="modal-close" onclick="closeModal('modal-edit-angajat')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-ang-id">
+      <div class="form-field">
+        <label class="form-label">Nume Prenume</label>
+        <input type="text" class="form-input" id="edit-ang-name">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Departament (opțional)</label>
+        <input type="text" class="form-input" id="edit-ang-dept" placeholder="ex: Depozit, Producție...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-edit-angajat')">Anulează</button>
+      <button class="btn-action" onclick="salveazaAngajat()">SALVEAZĂ</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+  getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc,
+  updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, increment,
+  serverTimestamp, Timestamp, writeBatch, where
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// =============================================
+// 🔥 CONFIGURARE FIREBASE
+// =============================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDidhCFWRqGM6i--qJwJz3_R5U9oT3k1to",
+  authDomain: "stoc-haine.firebaseapp.com",
+  projectId: "stoc-haine",
+  storageBucket: "stoc-haine.firebasestorage.app",
+  messagingSenderId: "1077110517965",
+  appId: "1:1077110517965:web:e00c95da16f63b50f83984"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// =============================================
+// STATE
+// =============================================
+let currentUser = null;
+let currentRole = null;
+let currentOperatorName = '';
+let stocData = {};
+let angajatiData = [];
+let istoricData = [];
+let unsubStoc = null;
+let unsubIstoric = null;
+
+// =============================================
+// MĂRIMI STANDARD
+// =============================================
+const MARIMI = ['XS', 'S', 'M', 'L', 'XL'];
+
+// =============================================
+// CONFIG OPERATORI
+// =============================================
+const OPERATORI = {
+  operator1: { displayName: 'Cristi' },
+  operator2: { displayName: 'Mihaela' },
+  operator3: { displayName: 'Raluca' },
+};
+
+// =============================================
+// AUTH TOGGLE — comută între operator și admin
+// =============================================
+window.toggleAdminLogin = () => {
+  const op = document.getElementById('operator-login');
+  const adm = document.getElementById('admin-login');
+  document.getElementById('auth-error').textContent = '';
+  const showingAdmin = adm.style.display !== 'none';
+  op.style.display = showingAdmin ? 'block' : 'none';
+  adm.style.display = showingAdmin ? 'none' : 'block';
+};
+
+// =============================================
+// OPERATOR LOGIN — fără parolă
+// =============================================
+window.doOperatorLogin = () => {
+  const sel = document.getElementById('operator-select').value;
+  const err = document.getElementById('auth-error');
+  if (!sel) { err.textContent = 'Selectează utilizatorul tău!'; return; }
+  const op = OPERATORI[sel];
+  if (!op) { err.textContent = 'Utilizator invalid.'; return; }
+  // Salvează în localStorage (persistent, rămâne după închidere browser)
+  localStorage.setItem('hermes_operator', JSON.stringify({ id: sel, ...op, role: 'operator' }));
+  currentUser = { uid: sel, email: sel, isOperator: true };
+  currentRole = 'operator';
+  currentOperatorName = op.displayName;
+  startApp();
+};
+
+// =============================================
+// ADMIN LOGIN — email + parolă Firebase
+// =============================================
+window.doAdminLogin = async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  document.getElementById('auth-error').textContent = '';
+  if (!email || !pass) { document.getElementById('auth-error').textContent = 'Completează email și parola!'; return; }
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch (e) {
+    document.getElementById('auth-error').textContent = 'Email sau parolă incorectă.';
+  }
+};
+
+document.getElementById('login-pass')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') window.doAdminLogin();
+});
+
+// =============================================
+// FIREBASE AUTH STATE — admin prin Firebase
+// =============================================
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    // Oricine e logat prin Firebase Auth = admin
+    currentRole = 'admin';
+    currentOperatorName = 'Paul';
+    startApp();
+  } else {
+    // Verifică dacă e operator logat local (persistent)
+    const savedOp = localStorage.getItem('hermes_operator');
+    if (savedOp) {
+      try {
+        const op = JSON.parse(savedOp);
+        currentUser = { uid: op.id, email: op.id, isOperator: true };
+        currentRole = 'operator';
+        currentOperatorName = op.displayName;
+        startApp();
+        return;
+      } catch { sessionStorage.removeItem('hermes_operator'); }
+    }
+    // Nimeni logat
+    currentUser = null; currentRole = null; currentOperatorName = '';
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    if (unsubStoc) unsubStoc();
+    if (unsubIstoric) unsubIstoric();
+  }
+});
+
+// =============================================
+// LOGOUT
+// =============================================
+window.doLogout = async () => {
+  appStarted = false;
+  localStorage.removeItem('hermes_operator');
+  sessionStorage.removeItem('hermes_operator');
+  if (currentUser?.isOperator) {
+    window.location.reload();
+  } else {
+    await signOut(auth);
+    window.location.reload();
+  }
+};
+
+// Admin forțează deconectarea unui operator de pe telefonul lui
+// Salvează un flag în Firestore — operatorul verifică la fiecare focus
+window.forceLogoutOperator = async (opId, opName) => {
+  if (!confirm(`Deconectezi "${opName}" de pe telefonul lui?`)) return;
+  await setDoc(doc(db, 'force_logout', opId), {
+    logout: true, timestamp: serverTimestamp()
+  });
+  showToast(`"${opName}" va fi deconectat instant.`);
+};
+
+window.cancelForceLogout = async (opId, opName) => {
+  await deleteDoc(doc(db, 'force_logout', opId));
+  showToast(`Deconectare anulată pentru "${opName}".`);
+};
+
+// =============================================
+// START APP — comun admin + operator
+// =============================================
+let appStarted = false;
+function startApp() {
+  if (appStarted) return; // previne dubla inițializare
+  appStarted = true;
+
+  document.getElementById('header-username').textContent = currentOperatorName;
+  document.getElementById('header-role').textContent = currentRole === 'admin' ? 'Admin' : 'Operator';
+  document.getElementById('header-role').className = 'user-role' + (currentRole === 'admin' ? '' : ' viewer');
+
+  if (currentRole === 'admin') {
+    // Admin — scoate clasa ca să apară elementele
+    document.querySelectorAll('.admin-only').forEach(el => {
+      el.classList.remove('admin-only');
+      el.classList.add('admin-was-hidden');
+    });
+  }
+  // Operatorii — elementele rămân cu admin-only (ascunse prin CSS)
+
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  initApp();
+}
+
+// =============================================
+// INIT APP
+// =============================================
+function initApp() {
+  loadStocRealtime();
+  loadAngajati();
+  loadIstoric();
+  loadUsers();
+  loadAdaugari();
+  setupDistribuireSelects();
+  renderMarimiAdmin();
+
+  // Operatorii verifică dacă au fost deconectați forțat de admin
+  if (currentRole === 'operator' && currentUser?.uid) {
+    const checkForceLogout = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'force_logout', currentUser.uid));
+        if (snap.exists() && snap.data().logout === true) {
+          // Șterge documentul și deconectează
+          await deleteDoc(doc(db, 'force_logout', currentUser.uid));
+          localStorage.removeItem('hermes_operator');
+          window.location.reload();
+        }
+      } catch {}
+    };
+    // Ascultă în timp real cu onSnapshot — instant când admin apasă deconectează
+    onSnapshot(doc(db, 'force_logout', currentUser.uid), (snap) => {
+      if (snap.exists() && snap.data().logout === true) {
+        deleteDoc(doc(db, 'force_logout', currentUser.uid)).then(() => {
+          localStorage.removeItem('hermes_operator');
+          window.location.reload();
+        });
+      }
+    });
+  }
+}
+
+// =============================================
+// STOC — REALTIME
+// =============================================
+function loadStocRealtime() {
+  if (unsubStoc) unsubStoc();
+  unsubStoc = onSnapshot(collection(db, 'stoc'), (snapshot) => {
+    stocData = {};
+    snapshot.forEach(doc => {
+      stocData[doc.id] = { id: doc.id, ...doc.data() };
+    });
+    renderStoc();
+    updateStocSelects();
+    renderStats();
+  });
+}
+
+// Articole fără mărimi
+const FARA_MARIMI = ['SAPCA', 'CACIULA'];
+
+function renderStoc() {
+  const grid = document.getElementById('stoc-grid');
+  const haine = Object.values(stocData).sort((a, b) => a.denumire.localeCompare(b.denumire));
+  if (haine.length === 0) {
+    grid.innerHTML = '<div class="loading">Niciun articol în stoc. Adaugă primul articol.</div>';
+    return;
+  }
+  grid.innerHTML = haine.map(h => {
+    const fara = FARA_MARIMI.includes(h.denumire);
+    const deleteBtn = currentRole === 'admin'
+      ? `<button class="btn-danger" onclick="stergeHaina('${h.id}','${h.denumire}')">✕</button>` : '';
+
+    let sizesHtml, total;
+    if (fara) {
+      // Fără mărimi — afișează doar cantitatea totală
+      total = h.cantitate || 0;
+      const cls = total === 0 ? 'zero' : total <= 3 ? 'low' : 'ok';
+      sizesHtml = `<div style="padding:16px 20px;display:flex;align-items:center;gap:12px;">
+        <div style="font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;">Cantitate</div>
+        <div style="font-family:var(--font-mono);font-size:32px;font-weight:500;" class="size-qty ${cls}">${total}</div>
+        <div style="font-size:11px;color:var(--muted);">bucăți</div>
+      </div>`;
+    } else {
+      const sizes = MARIMI.map(m => {
+        const q = (h.marimi && h.marimi[m]) || 0;
+        const cls = q === 0 ? 'zero' : q <= 3 ? 'low' : 'ok';
+        return `<div class="size-cell">
+          <div class="size-label">${m}</div>
+          <div class="size-qty ${cls}">${q}</div>
+        </div>`;
+      }).join('');
+      total = MARIMI.reduce((s, m) => s + ((h.marimi && h.marimi[m]) || 0), 0);
+      sizesHtml = `<div class="stoc-sizes">${sizes}</div>`;
+    }
+
+    return `<div class="stoc-card">
+      <div class="stoc-card-header">
+        <div class="stoc-card-name">${h.denumire}</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          ${!fara ? `<div style="font-family:var(--font-mono);font-size:13px;color:var(--muted);">TOTAL: ${total}</div>` : ''}
+          ${deleteBtn}
+        </div>
+      </div>
+      ${sizesHtml}
+    </div>`;
+  }).join('');
+}
+
+function renderStats() {
+  const haine = Object.values(stocData);
+  const totalArticole = haine.length;
+  const totalBucati = haine.reduce((s, h) => s + MARIMI.reduce((ss, m) => ss + ((h.marimi && h.marimi[m]) || 0), 0), 0);
+  const tipuriScazute = haine.filter(h => MARIMI.some(m => ((h.marimi && h.marimi[m]) || 0) <= 3 && (h.marimi && h.marimi[m]) > 0)).length;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Tipuri Articole</div><div class="stat-value">${totalArticole}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Bucăți</div><div class="stat-value">${totalBucati}</div></div>
+    <div class="stat-card"><div class="stat-label">Stoc Scăzut</div><div class="stat-value" style="color:var(--red)">${tipuriScazute}</div></div>
+    <div class="stat-card"><div class="stat-label">Angajați</div><div class="stat-value">${angajatiData.length}</div></div>
+  `;
+}
+
+// =============================================
+// ANGAJATI
+// =============================================
+async function loadAngajati() {
+  const snap = await getDocs(query(collection(db, 'angajati'), orderBy('nume')));
+  angajatiData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderAngajati();
+  populateAngajatiSelect();
+  renderStats();
+}
+
+function renderAngajati() {
+  const grid = document.getElementById('angajati-grid');
+  const search = (document.getElementById('search-angajati')?.value || '').toLowerCase();
+  const filtered = angajatiData.filter(a => a.nume.toLowerCase().includes(search));
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div class="loading">Niciun angajat găsit.</div>'; return;
+  }
+  grid.innerHTML = filtered.map(a => `
+    <div class="angajat-card">
+      <div>
+        <div class="angajat-name">${a.nume}</div>
+        ${a.departament ? `<div class="angajat-dept">${a.departament}</div>` : ''}
+      </div>
+      ${currentRole === 'admin' ? `
+        <div style="display:flex;gap:6px;">
+          <button style="background:var(--surface2);border:1px solid var(--border);color:var(--accent);padding:6px 10px;border-radius:3px;cursor:pointer;font-size:12px;" onclick="editeazaAngajat('${a.id}','${a.nume.replace(/'/g,"\\'")}','${(a.departament||'').replace(/'/g,"\\'")}')">✏</button>
+          <button class="btn-danger" onclick="stergeAngajat('${a.id}','${a.nume}')">✕</button>
+        </div>` : ''}
+    </div>`).join('');
+}
+
+function populateAngajatiSelect() {
+  const sel = document.getElementById('dist-angajat');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Selectează angajat —</option>' +
+    angajatiData.map(a => `<option value="${a.id}" ${a.id === cur ? 'selected' : ''}>${a.nume}</option>`).join('');
+}
+
+window.filterAngajati = () => renderAngajati();
+
+window.adaugaAngajat = async () => {
+  const nume = document.getElementById('ang-name').value.trim();
+  const dept = document.getElementById('ang-dept').value.trim();
+  if (!nume) { showToast('Introduceți un nume!', true); return; }
+  await addDoc(collection(db, 'angajati'), { nume, departament: dept, creatLa: serverTimestamp() });
+  await loadAngajati();
+  closeModal('modal-add-angajat');
+  document.getElementById('ang-name').value = '';
+  document.getElementById('ang-dept').value = '';
+  showToast(`Angajat "${nume}" adăugat!`);
+};
+
+window.stergeAngajat = async (id, nume) => {
+  if (!confirm(`Ștergi angajatul "${nume}"?`)) return;
+  await deleteDoc(doc(db, 'angajati', id));
+  await loadAngajati();
+  showToast(`Angajat "${nume}" șters.`);
+};
+
+window.editeazaAngajat = (id, nume, dept) => {
+  document.getElementById('edit-ang-id').value = id;
+  document.getElementById('edit-ang-name').value = nume;
+  document.getElementById('edit-ang-dept').value = dept;
+  openModal('modal-edit-angajat');
+};
+
+window.salveazaAngajat = async () => {
+  const id = document.getElementById('edit-ang-id').value;
+  const nume = document.getElementById('edit-ang-name').value.trim();
+  const dept = document.getElementById('edit-ang-dept').value.trim();
+  if (!nume) { showToast('Numele nu poate fi gol!', true); return; }
+  await updateDoc(doc(db, 'angajati', id), { nume, departament: dept });
+  await loadAngajati();
+  closeModal('modal-edit-angajat');
+  showToast(`Angajat actualizat: "${nume}"`);
+};
+
+// =============================================
+// STOC SELECTS
+// =============================================
+function updateStocSelects() {
+  const haine = Object.values(stocData).sort((a, b) => a.denumire.localeCompare(b.denumire));
+  const opts = '<option value="">— Selectează —</option>' + haine.map(h => `<option value="${h.id}">${h.denumire}</option>`).join('');
+  document.getElementById('stoc-haina').innerHTML = opts;
+  document.getElementById('dist-haina').innerHTML = opts;
+  if (document.getElementById('cor-haina')) document.getElementById('cor-haina').innerHTML = opts;
+  // filter dropdown in istoric
+  const fh = document.getElementById('filter-haina');
+  if (fh) fh.innerHTML = '<option value="">Toate articolele</option>' + haine.map(h => `<option>${h.denumire}</option>`).join('');
+}
+
+function setupDistribuireSelects() {
+  // run after stoc loads
+}
+
+window.updateSizeOptions = () => {
+  const hId = document.getElementById('dist-haina').value;
+  const sel = document.getElementById('dist-marime');
+  const marimeRow = document.getElementById('dist-marime-row');
+  const info = document.getElementById('dist-stoc-info');
+  if (!hId || !stocData[hId]) {
+    sel.innerHTML = '<option value="">— Mărime —</option>';
+    marimeRow.style.display = '';
+    info.textContent = '';
+    return;
+  }
+  const h = stocData[hId];
+  const fara = FARA_MARIMI.includes(h.denumire);
+  if (fara) {
+    // Fără mărimi — ascunde rândul și setează marime = 'N/A'
+    marimeRow.style.display = 'none';
+    sel.innerHTML = '<option value="N/A">N/A</option>';
+    sel.value = 'N/A';
+    const q = h.cantitate || 0;
+    info.textContent = `Stoc disponibil: ${q} bucăți`;
+    info.style.color = q <= 3 ? 'var(--red)' : 'var(--green)';
+  } else {
+    marimeRow.style.display = '';
+    sel.innerHTML = '<option value="">— Mărime —</option>' +
+      MARIMI.map(m => {
+        const q = (h.marimi && h.marimi[m]) || 0;
+        return `<option value="${m}" ${q === 0 ? 'disabled style="color:#666"' : ''}>${m} (stoc: ${q})</option>`;
+      }).join('');
+    sel.onchange = updateStocInfo;
+    updateStocInfo();
+  }
+};
+
+function updateStocInfo() {
+  const hId = document.getElementById('dist-haina').value;
+  const m = document.getElementById('dist-marime').value;
+  const info = document.getElementById('dist-stoc-info');
+  if (!hId || !m || !stocData[hId]) { info.textContent = ''; return; }
+  const q = (stocData[hId].marimi && stocData[hId].marimi[m]) || 0;
+  info.textContent = `Stoc disponibil: ${q} bucăți`;
+  info.style.color = q <= 3 ? 'var(--red)' : 'var(--green)';
+}
+
+// =============================================
+// DISTRIBUIRE
+// =============================================
+window.distribuieHaine = async () => {
+  const angId = document.getElementById('dist-angajat').value;
+  const hId = document.getElementById('dist-haina').value;
+  const marime = document.getElementById('dist-marime').value;
+  const qty = parseInt(document.getElementById('dist-qty').value) || 1;
+
+  if (!angId) { showToast('Selectează un angajat!', true); return; }
+  if (!hId) { showToast('Selectează un articol!', true); return; }
+  if (!marime) { showToast('Selectează o mărime!', true); return; }
+  if (qty < 1) { showToast('Cantitate invalidă!', true); return; }
+
+  const haina = stocData[hId];
+  const fara = FARA_MARIMI.includes(haina?.denumire);
+
+  // Verifică stoc disponibil
+  const stocCurent = fara
+    ? (haina?.cantitate || 0)
+    : (stocData[hId]?.marimi?.[marime] || 0);
+
+  if (qty > stocCurent) {
+    showToast(`Stoc insuficient! Disponibil: ${stocCurent}`, true);
+    return;
+  }
+
+  const angajat = angajatiData.find(a => a.id === angId);
+  const batch = writeBatch(db);
+
+  // Scade din stoc
+  const stocRef = doc(db, 'stoc', hId);
+  if (fara) {
+    batch.update(stocRef, { cantitate: increment(-qty) });
+  } else {
+    batch.update(stocRef, { [`marimi.${marime}`]: increment(-qty) });
+  }
+
+  // Adaugă în istoric
+  const istoricRef = doc(collection(db, 'istoric'));
+  batch.set(istoricRef, {
+    angajatId: angId,
+    angajatNume: angajat?.nume || '—',
+    hainaId: hId,
+    hainaDenumire: haina?.denumire || '—',
+    marime: fara ? '—' : marime,
+    cantitate: qty,
+    operator: currentOperatorName || '—',
+    data: serverTimestamp()
+  });
+
+  await batch.commit();
+  showToast(`✅ ${qty}x ${haina.denumire}${fara ? '' : ' ' + marime} → ${angajat?.nume}!`);
+
+  // Reset complet formular
+  document.getElementById('dist-angajat').value = '';
+  document.getElementById('dist-haina').value = '';
+  document.getElementById('dist-marime').innerHTML = '<option value="">— Mărime —</option>';
+  document.getElementById('dist-marime-row').style.display = '';
+  document.getElementById('dist-qty').value = 1;
+  document.getElementById('dist-stoc-info').textContent = '';
+  loadRecentDistribuiri();
+};
+
+async function loadRecentDistribuiri() {
+  const snap = await getDocs(query(collection(db, 'istoric'), orderBy('data', 'desc'), limit(10)));
+  const div = document.getElementById('distribuiri-recente');
+  if (snap.empty) { div.innerHTML = '<div style="color:var(--muted);font-size:12px;">Nicio distribuire încă.</div>'; return; }
+  div.innerHTML = snap.docs.map(d => {
+    const x = d.data();
+    const dt = x.data?.toDate ? x.data.toDate() : new Date();
+    const data = dt.toLocaleDateString('ro-RO', {day:'2-digit', month:'2-digit', year:'numeric'});
+    const ora = dt.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
+    const marime = x.marime && x.marime !== '—' ? ` · <span class="badge-size">${x.marime}</span>` : '';
+    return `<div style="border-bottom:1px solid var(--border);padding:10px 0;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="font-weight:600;font-size:13px;">${x.angajatNume}</div>
+        <div style="font-size:10px;color:var(--accent);white-space:nowrap;font-family:var(--font-mono);">${ora}</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin:2px 0;">${x.hainaDenumire}${marime} · <span style="color:var(--text);font-family:var(--font-mono);">${x.cantitate} buc</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:3px;">
+        <span style="color:var(--muted);">👤 ${x.operator || '—'}</span>
+        <span style="color:var(--muted);">${data}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// =============================================
+// ISTORIC
+// =============================================
+function loadIstoric() {
+  if (unsubIstoric) unsubIstoric();
+  unsubIstoric = onSnapshot(query(collection(db, 'istoric'), orderBy('data', 'desc')), snap => {
+    istoricData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderIstoric();
+    loadRecentDistribuiri();
+  });
+}
+
+function renderIstoric() {
+  const tbody = document.getElementById('istoric-tbody');
+  const search = (document.getElementById('search-istoric')?.value || '').toLowerCase();
+  const filterH = (document.getElementById('filter-haina')?.value || '').toLowerCase();
+  let rows = istoricData;
+  if (search) rows = rows.filter(r => (r.angajatNume || '').toLowerCase().includes(search) || (r.hainaDenumire || '').toLowerCase().includes(search) || (r.operator || '').toLowerCase().includes(search));
+  if (filterH) rows = rows.filter(r => (r.hainaDenumire || '').toLowerCase() === filterH);
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px;">Nicio înregistrare.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const dt = r.data?.toDate ? r.data.toDate() : new Date();
+    const data = dt.toLocaleDateString('ro-RO', {day:'2-digit', month:'2-digit', year:'numeric'});
+    const ora = dt.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
+    const marime = r.marime && r.marime !== '—' ? `<span class="badge-size">${r.marime}</span>` : '<span style="color:var(--muted)">—</span>';
+    return `<tr>
+      <td style="white-space:nowrap;">${data}</td>
+      <td style="font-family:var(--font-mono);color:var(--accent);font-size:12px;">${ora}</td>
+      <td style="font-weight:500;">${r.angajatNume || '—'}</td>
+      <td>${r.hainaDenumire || '—'}</td>
+      <td>${marime}</td>
+      <td><span class="qty-tag">${r.cantitate || 1}</span></td>
+      <td style="color:var(--accent);font-size:12px;">👤 ${r.operator || '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+window.filterIstoric = renderIstoric;
+
+// =============================================
+// EXPORT CSV
+// =============================================
+window.exportCSV = () => {
+  const rows = [['Data', 'Angajat', 'Articol', 'Marime', 'Cantitate', 'Operator']];
+  istoricData.forEach(r => {
+    const dt = r.data?.toDate ? r.data.toDate() : new Date();
+    rows.push([dt.toLocaleDateString('ro-RO'), r.angajatNume, r.hainaDenumire, r.marime, r.cantitate, r.operator]);
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `istoric_stoc_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+};
+
+// Toggle mărime în modal adaugă stoc
+window.updateStocModalMarime = () => {
+  const hId = document.getElementById('stoc-haina').value;
+  const fara = hId && FARA_MARIMI.includes(stocData[hId]?.denumire);
+  document.getElementById('stoc-marime-row').style.display = fara ? 'none' : '';
+  document.getElementById('stoc-qty-only').style.display = fara ? '' : 'none';
+};
+
+// =============================================
+// ADAUGĂ STOC
+// =============================================
+window.adaugaStoc = async () => {
+  const hId = document.getElementById('stoc-haina').value;
+  const obs = document.getElementById('stoc-obs').value.trim();
+  if (!hId) { showToast('Selectează un articol!', true); return; }
+
+  const haina = stocData[hId];
+  const fara = FARA_MARIMI.includes(haina?.denumire);
+
+  let marime, qty;
+  if (fara) {
+    marime = '—';
+    qty = parseInt(document.getElementById('stoc-qty-fara').value) || 0;
+  } else {
+    marime = document.getElementById('stoc-marime').value;
+    qty = parseInt(document.getElementById('stoc-qty').value) || 0;
+    if (!marime) { showToast('Selectează o mărime!', true); return; }
+  }
+  if (qty <= 0) { showToast('Cantitate invalidă!', true); return; }
+
+  const batch = writeBatch(db);
+
+  // Actualizează stocul
+  const stocRef = doc(db, 'stoc', hId);
+  if (fara) {
+    batch.update(stocRef, { cantitate: increment(qty) });
+  } else {
+    batch.update(stocRef, { [`marimi.${marime}`]: increment(qty) });
+  }
+
+  // Salvează în colecția adaugari (istoric adăugări)
+  const adaugareRef = doc(collection(db, 'adaugari'));
+  batch.set(adaugareRef, {
+    hainaId: hId,
+    hainaDenumire: haina?.denumire || '—',
+    marime,
+    cantitate: qty,
+    observatii: obs || '',
+    data: serverTimestamp()
+  });
+
+  await batch.commit();
+  closeModal('modal-add-stoc');
+  // Reset modal
+  document.getElementById('stoc-haina').value = '';
+  document.getElementById('stoc-marime').value = '';
+  document.getElementById('stoc-qty').value = 1;
+  document.getElementById('stoc-qty-fara').value = 1;
+  document.getElementById('stoc-obs').value = '';
+  document.getElementById('stoc-marime-row').style.display = '';
+  document.getElementById('stoc-qty-only').style.display = 'none';
+  showToast(`✅ +${qty} ${haina?.denumire}${fara ? '' : ' ' + marime} adăugat în stoc!`);
+  loadAdaugari();
+};
+
+// =============================================
+// CORECTEAZĂ STOC — setează cantitate exactă
+// =============================================
+window.updateCorectareMarime = () => {
+  const hId = document.getElementById('cor-haina').value;
+  const fara = hId && FARA_MARIMI.includes(stocData[hId]?.denumire);
+  document.getElementById('cor-marime-row').style.display = fara ? 'none' : '';
+  document.getElementById('cor-marime').value = '';
+  document.getElementById('cor-stoc-curent').textContent = '—';
+  if (fara && hId) {
+    const q = stocData[hId]?.cantitate || 0;
+    document.getElementById('cor-stoc-curent').textContent = q + ' buc';
+  }
+};
+
+window.updateCorectareStocCurent = () => {
+  const hId = document.getElementById('cor-haina').value;
+  const m = document.getElementById('cor-marime').value;
+  if (!hId || !m) { document.getElementById('cor-stoc-curent').textContent = '—'; return; }
+  const q = stocData[hId]?.marimi?.[m] || 0;
+  document.getElementById('cor-stoc-curent').textContent = q + ' buc';
+};
+
+window.corecteazaStoc = async () => {
+  const hId = document.getElementById('cor-haina').value;
+  const motiv = document.getElementById('cor-motiv').value.trim();
+  const nouaQty = parseInt(document.getElementById('cor-qty').value);
+  if (!hId) { showToast('Selectează un articol!', true); return; }
+  if (isNaN(nouaQty) || nouaQty < 0) { showToast('Introduceți o cantitate validă (≥ 0)!', true); return; }
+
+  const haina = stocData[hId];
+  const fara = FARA_MARIMI.includes(haina?.denumire);
+  const marime = fara ? '—' : document.getElementById('cor-marime').value;
+  if (!fara && !marime) { showToast('Selectează o mărime!', true); return; }
+
+  const stocVechi = fara
+    ? (haina?.cantitate || 0)
+    : (haina?.marimi?.[marime] || 0);
+
+  if (!confirm(`Schimbi stocul ${haina.denumire}${fara ? '' : ' ' + marime} de la ${stocVechi} → ${nouaQty} bucăți?`)) return;
+
+  const batch = writeBatch(db);
+  const stocRef = doc(db, 'stoc', hId);
+
+  if (fara) {
+    batch.update(stocRef, { cantitate: nouaQty });
+  } else {
+    batch.update(stocRef, { [`marimi.${marime}`]: nouaQty });
+  }
+
+  // Salvează în adaugari cu diferența
+  const diferenta = nouaQty - stocVechi;
+  const adaugareRef = doc(collection(db, 'adaugari'));
+  batch.set(adaugareRef, {
+    hainaId: hId,
+    hainaDenumire: haina?.denumire || '—',
+    marime,
+    cantitate: diferenta,
+    observatii: `CORECȚIE: ${stocVechi}→${nouaQty}${motiv ? ' | ' + motiv : ''}`,
+    data: serverTimestamp()
+  });
+
+  await batch.commit();
+  closeModal('modal-corecteaza-stoc');
+  document.getElementById('cor-haina').value = '';
+  document.getElementById('cor-marime').value = '';
+  document.getElementById('cor-qty').value = '';
+  document.getElementById('cor-motiv').value = '';
+  document.getElementById('cor-stoc-curent').textContent = '—';
+  showToast(`✅ Stoc corectat: ${haina.denumire}${fara ? '' : ' ' + marime} = ${nouaQty} buc`);
+  loadAdaugari();
+};
+let adaugariData = [];
+let unsubAdaugari = null;
+
+function loadAdaugari() {
+  if (unsubAdaugari) unsubAdaugari();
+  unsubAdaugari = onSnapshot(query(collection(db, 'adaugari'), orderBy('data', 'desc')), snap => {
+    adaugariData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderAdaugari();
+  });
+}
+
+function renderAdaugari() {
+  const tbody = document.getElementById('adaugari-tbody');
+  if (!tbody) return;
+  const search = (document.getElementById('search-adaugari')?.value || '').toLowerCase();
+  let rows = adaugariData;
+  if (search) rows = rows.filter(r =>
+    (r.hainaDenumire || '').toLowerCase().includes(search) ||
+    (r.observatii || '').toLowerCase().includes(search)
+  );
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;">Nicio adăugare înregistrată.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const dt = r.data?.toDate ? r.data.toDate() : new Date();
+    const data = dt.toLocaleDateString('ro-RO', {day:'2-digit', month:'2-digit', year:'numeric'});
+    const ora = dt.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
+    const marime = r.marime && r.marime !== '—' ? `<span class="badge-size">${r.marime}</span>` : '<span style="color:var(--muted)">—</span>';
+    return `<tr>
+      <td style="white-space:nowrap;">${data}</td>
+      <td style="font-family:var(--font-mono);color:var(--accent);font-size:12px;">${ora}</td>
+      <td style="font-weight:500;">${r.hainaDenumire || '—'}</td>
+      <td>${marime}</td>
+      <td><span class="qty-tag" style="color:var(--green);">+${r.cantitate || 0}</span></td>
+      <td style="color:var(--muted);font-size:12px;">${r.observatii || '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+window.filterAdaugari = renderAdaugari;
+
+window.exportCSVAdaugari = () => {
+  const rows = [['Data', 'Ora', 'Articol', 'Marime', 'Cantitate', 'Observatii']];
+  adaugariData.forEach(r => {
+    const dt = r.data?.toDate ? r.data.toDate() : new Date();
+    rows.push([
+      dt.toLocaleDateString('ro-RO'),
+      dt.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'}),
+      r.hainaDenumire, r.marime, r.cantitate, r.observatii || ''
+    ]);
+  });
+  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `adaugari_stoc_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+};
+
+// =============================================
+// ADAUGĂ HAINA
+// =============================================
+window.adaugaHaina = async () => {
+  const name = document.getElementById('haina-name').value.trim().toUpperCase();
+  if (!name) { showToast('Introduceți un nume!', true); return; }
+  const existing = Object.values(stocData).find(h => h.denumire === name);
+  if (existing) { showToast('Articolul există deja!', true); return; }
+  const marimi = {};
+  MARIMI.forEach(m => marimi[m] = 0);
+  await addDoc(collection(db, 'stoc'), { denumire: name, marimi, creatLa: serverTimestamp() });
+  closeModal('modal-add-haina');
+  document.getElementById('haina-name').value = '';
+  showToast(`Articol "${name}" creat!`);
+};
+
+// =============================================
+// STERGE HAINA
+// =============================================
+window.stergeHaina = async (id, denumire) => {
+  if (!confirm(`Ștergi articolul "${denumire}" din stoc?\nATENȚIE: Aceasta nu șterge istoricul de distribuiri.`)) return;
+  await deleteDoc(doc(db, 'stoc', id));
+  showToast(`Articol "${denumire}" șters.`);
+};
+
+// =============================================
+// USERS (Admin)
+// =============================================
+async function loadUsers() {
+  if (currentRole !== 'admin') return;
+  const ops = [
+    { id: 'operator1', nume: 'Cristi' },
+    { id: 'operator2', nume: 'Mihaela' },
+    { id: 'operator3', nume: 'Raluca' },
+  ];
+  // Ascultă în timp real statusul fiecărui operator
+  ops.forEach(op => {
+    onSnapshot(doc(db, 'force_logout', op.id), (snap) => {
+      const statusEl = document.getElementById(`op-status-${op.id}`);
+      if (!statusEl) return;
+      if (snap.exists() && snap.data().logout === true) {
+        const dt = snap.data().timestamp?.toDate();
+        const ora = dt ? dt.toLocaleTimeString('ro-RO', {hour:'2-digit',minute:'2-digit'}) : '';
+        statusEl.textContent = `⏳ Deconectare în așteptare (din ${ora})`;
+        statusEl.style.color = 'var(--red)';
+      } else {
+        statusEl.textContent = '✅ Activ';
+        statusEl.style.color = 'var(--green)';
+      }
+    });
+  });
+}
+
+function renderMarimiAdmin() {
+  const div = document.getElementById('marimi-list');
+  if (!div) return;
+  div.innerHTML = MARIMI.map(m => `<span class="badge-size" style="font-size:14px;padding:6px 14px;">${m}</span>`).join('');
+}
+
+// =============================================
+// SEED DATE DIN EXCEL
+// =============================================
+window.seedData = async () => {
+  // Verifică dacă stocul e deja importat
+  const existingSnap = await getDocs(collection(db, 'stoc'));
+  if (!existingSnap.empty) {
+    showToast(`Stocul are deja ${existingSnap.size} articole! Șterge-le mai întâi dacă vrei reimport.`, true);
+    return;
+  }
+
+  if (!confirm('Importă datele din Excel în Firebase?\nApasă OK pentru a continua.')) return;
+
+  const batch = writeBatch(db);
+
+  // Stocuri exacte din coloana "STOC ACTUAL" din Excel
+  const haineInitiale = [
+    { denumire: 'PANTALONI SCURTI',  marimi: { XS: 0,  S: 0,  M: 0,  L: 13, XL: 8  } },
+    { denumire: 'PANTALONI LUNGI',   marimi: { XS: 0,  S: 0,  M: 0,  L: 0,  XL: 0  } },
+    { denumire: 'PANTALONI TRENING', marimi: { XS: 10, S: 1,  M: 0,  L: 13, XL: 13 } },
+    { denumire: 'TRICOU',            marimi: { XS: 9,  S: 8,  M: 4,  L: 7,  XL: 1  } },
+    { denumire: 'BLUZA',             marimi: { XS: 0,  S: 13, M: 3,  L: 9,  XL: 5  } },
+    { denumire: 'BLUZA FERMOAR',     marimi: { XS: 0,  S: 0,  M: 5,  L: 0,  XL: 0  } },
+    { denumire: 'JACHETA PLOAIE',    marimi: { XS: 0,  S: 8,  M: 5,  L: 6,  XL: 4  } },
+    { denumire: 'JACHETA',           marimi: { XS: 0,  S: 27, M: 17, L: 8,  XL: 10 } },
+    { denumire: 'SAPCA',             cantitate: 0  },
+    { denumire: 'CACIULA',           cantitate: 5  },
+  ];
+
+  haineInitiale.forEach(h => {
+    const ref = doc(collection(db, 'stoc'));
+    batch.set(ref, { ...h, creatLa: serverTimestamp() });
+  });
+
+  // Toți angajații din Excel (50 persoane)
+  const angajatiInitiali = [
+    'Andrei Alex','Bainoczi Ravan','Bitiusca Gabriel','Bisoc Ionut','Bruma Nicolae',
+    'Burlacu','Buciu Petre','Cazan Ionut','Ciobotaru Adrian','Ciobotaru Larisa',
+    'Crainic Adrian','Crainic Gabriel','Dima Dobinda','Dobinda Dumitru','Dutescu Daniel',
+    'Eftodii Andrei','Farkas Rudolf','Ferent Simon','Feraru Razvan','Iacob Mihai',
+    'Lica Madalin','Macarie Paul','Maicosul Adelin','Maies Antonio','Margau Rafael',
+    'Mereacre Mihail','Mihai Adrian','Moise Alexandru','Morosanu Lucian','Musteata Ioan',
+    'Nadia','Necula Marius','Plesca Mihai','Pop Marcel','Radu PS',
+    'Raghinaru Marian','Razvan Bainoczi','Roman Marinel','Rudareanu Vladut','Serban Florin',
+    'Sparios Eduard','Stan Flori','Stan Ionel','Stanciu Anastasia','Stanciu Dumitru',
+    'Stinga Valeriu','Tania','Toth Cristina','Tufeanu Claudia','Zestrea Mihail',
+  ];
+
+  angajatiInitiali.forEach(nume => {
+    const ref = doc(collection(db, 'angajati'));
+    batch.set(ref, { nume, departament: '', creatLa: serverTimestamp() });
+  });
+
+  await batch.commit();
+  showToast('✅ Date importate cu succes! 10 articole + 50 angajați.');
+  await loadAngajati();
+};
+
+window.showSection = (id, tab) => {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('section-' + id)?.classList.add('active');
+  tab?.classList.add('active');
+  if (id === 'distribuire') loadRecentDistribuiri();
+  if (id === 'adaugari') renderAdaugari();
+};
+
+window.openModal = (id) => {
+  document.getElementById(id)?.classList.add('open');
+};
+window.closeModal = (id) => {
+  document.getElementById(id)?.classList.remove('open');
+};
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (isError ? ' error' : '');
+  setTimeout(() => t.className = '', 3000);
+}
+window.showToast = showToast;
+
+</script>
+</body>
+</html>
