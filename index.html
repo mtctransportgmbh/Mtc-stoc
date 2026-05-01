@@ -1934,15 +1934,20 @@ window.curatistoric = async (tip) => {
 
   const colectii = tip === 'tot' ? ['istoric', 'adaugari'] : [tip];
   let total = 0;
+
   for (const col of colectii) {
     const snap = await getDocs(collection(db, col));
-    if (!snap.empty) {
+    if (snap.empty) continue;
+    // Împarte în batches de maxim 400 documente
+    const docs = snap.docs;
+    for (let i = 0; i < docs.length; i += 400) {
       const batch = writeBatch(db);
-      snap.docs.forEach(d => batch.delete(d.ref));
+      docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
       await batch.commit();
-      total += snap.size;
     }
+    total += docs.length;
   }
+
   showToast(`✅ ${total} înregistrări șterse.`);
 };
 
