@@ -971,6 +971,23 @@ if (savedVersion && savedVersion !== APP_VERSION) {
   </div>
 </div>
 
+<!-- Modal Stoc Scazut -->
+<div class="modal-overlay" id="modal-stoc-scazut">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <div class="modal-title" style="color:var(--red);">⚠ STOC SCĂZUT</div>
+      <button class="modal-close" onclick="closeModal('modal-stoc-scazut')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px 24px;">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Articole cu cantitate ≤ 7 bucăți</p>
+      <div id="stoc-scazut-lista"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-action" onclick="closeModal('modal-stoc-scazut')">ÎNCHIDE</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- FIREBASE -->
@@ -1234,6 +1251,7 @@ function loadStocRealtime() {
 }
 
 // Articole fără mărimi
+const PRAG_SCAZUT = 7;
 const FARA_MARIMI = ['SAPCA', 'CACIULA'];
 
 function renderStoc() {
@@ -1252,7 +1270,7 @@ function renderStoc() {
     if (fara) {
       // Fără mărimi — afișează doar cantitatea totală
       total = h.cantitate || 0;
-      const cls = total === 0 ? 'zero' : total <= 3 ? 'low' : 'ok';
+      const cls = total === 0 ? 'zero' : total <= PRAG_SCAZUT ? 'low' : 'ok';
       sizesHtml = `<div style="padding:16px 20px;display:flex;align-items:center;gap:12px;">
         <div style="font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;">Cantitate</div>
         <div style="font-family:var(--font-mono);font-size:32px;font-weight:500;" class="size-qty ${cls}">${total}</div>
@@ -1261,7 +1279,7 @@ function renderStoc() {
     } else {
       const sizes = MARIMI.map(m => {
         const q = (h.marimi && h.marimi[m]) || 0;
-        const cls = q === 0 ? 'zero' : q <= 3 ? 'low' : 'ok';
+        const cls = q === 0 ? 'zero' : q <= PRAG_SCAZUT ? 'low' : 'ok';
         return `<div class="size-cell">
           <div class="size-label">${m}</div>
           <div class="size-qty ${cls}">${q}</div>
@@ -1291,17 +1309,77 @@ function renderStats() {
     if (FARA_MARIMI.includes(h.denumire)) return s + (h.cantitate || 0);
     return s + MARIMI.reduce((ss, m) => ss + ((h.marimi && h.marimi[m]) || 0), 0);
   }, 0);
-  const tipuriScazute = haine.filter(h => {
-    if (FARA_MARIMI.includes(h.denumire)) return (h.cantitate || 0) <= 3 && (h.cantitate || 0) > 0;
-    return MARIMI.some(m => ((h.marimi && h.marimi[m]) || 0) <= 3 && (h.marimi && h.marimi[m]) > 0);
-  }).length;
+
+  // Numără combinații articol+mărime cu stoc ≤ 7
+  let nrScazut = 0;
+  haine.forEach(h => {
+    if (FARA_MARIMI.includes(h.denumire)) {
+      if ((h.cantitate || 0) <= PRAG_SCAZUT) nrScazut++;
+    } else {
+      MARIMI.forEach(m => {
+        if (((h.marimi && h.marimi[m]) || 0) <= PRAG_SCAZUT) nrScazut++;
+      });
+    }
+  });
+
   document.getElementById('stats-row').innerHTML = `
     <div class="stat-card"><div class="stat-label">Tipuri Articole</div><div class="stat-value">${totalArticole}</div></div>
     <div class="stat-card"><div class="stat-label">Total Bucăți</div><div class="stat-value">${totalBucati}</div></div>
-    <div class="stat-card"><div class="stat-label">Stoc Scăzut</div><div class="stat-value" style="color:var(--red)">${tipuriScazute}</div></div>
+    <div class="stat-card" onclick="showStocScazut()" style="cursor:pointer;border-color:var(--red);transition:all 0.2s;" onmouseover="this.style.background='#1a0a0a'" onmouseout="this.style.background=''">
+      <div class="stat-label" style="color:var(--red);">⚠ Stoc Scăzut ≤7 — Click</div>
+      <div class="stat-value" style="color:var(--red);">${nrScazut}</div>
+    </div>
     <div class="stat-card"><div class="stat-label">Angajați</div><div class="stat-value">${angajatiData.length}</div></div>
   `;
 }
+
+window.showStocScazut = () => {
+  const haine = Object.values(stocData).sort((a, b) => a.denumire.localeCompare(b.denumire));
+  const lista = [];
+
+  haine.forEach(h => {
+    if (FARA_MARIMI.includes(h.denumire)) {
+      const q = h.cantitate || 0;
+      if (q <= PRAG_SCAZUT) {
+        lista.push({ denumire: h.denumire, marime: '—', cantitate: q });
+      }
+    } else {
+      MARIMI.forEach(m => {
+        const q = (h.marimi && h.marimi[m]) || 0;
+        if (q <= PRAG_SCAZUT) {
+          lista.push({ denumire: h.denumire, marime: m, cantitate: q });
+        }
+      });
+    }
+  });
+
+  const div = document.getElementById('stoc-scazut-lista');
+  if (lista.length === 0) {
+    div.innerHTML = '<div style="color:var(--green);text-align:center;padding:20px;font-size:13px;">✅ Toate articolele au stoc suficient!</div>';
+  } else {
+    // Grupează pe articol
+    const grupate = {};
+    lista.forEach(item => {
+      if (!grupate[item.denumire]) grupate[item.denumire] = [];
+      grupate[item.denumire].push(item);
+    });
+    div.innerHTML = Object.entries(grupate).map(([denumire, items]) => `
+      <div style="margin-bottom:12px;border:1px solid var(--border);border-left:3px solid var(--red);border-radius:4px;overflow:hidden;">
+        <div style="background:var(--surface2);padding:8px 14px;font-family:var(--font-display);font-size:17px;letter-spacing:1px;">${denumire}</div>
+        <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;">
+          ${items.map(item => {
+            const cls = item.cantitate === 0 ? 'color:var(--muted)' : 'color:var(--red)';
+            const bg = item.cantitate === 0 ? 'background:#1a1a1a' : 'background:#1a0a0a';
+            return `<div style="${bg};border:1px solid var(--border);border-radius:3px;padding:6px 12px;text-align:center;min-width:56px;">
+              <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:3px;">${item.marime}</div>
+              <div style="font-family:var(--font-mono);font-size:20px;font-weight:500;${cls}">${item.cantitate}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`).join('');
+  }
+  openModal('modal-stoc-scazut');
+};
 
 // =============================================
 // ANGAJATI
@@ -1325,18 +1403,21 @@ function renderAngajati() {
   if (filtered.length === 0) {
     grid.innerHTML = '<div class="loading">Niciun angajat găsit.</div>'; return;
   }
-  grid.innerHTML = filtered.map(a => `
-    <div class="angajat-card">
+  grid.innerHTML = filtered.map(a => {
+    const numeEsc = a.nume.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const deptEsc = (a.departament||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<div class="angajat-card">
       <div>
         <div class="angajat-name">${a.nume}</div>
         ${a.departament ? `<div class="angajat-dept">${a.departament}</div>` : ''}
       </div>
       ${currentRole === 'admin' ? `
         <div style="display:flex;gap:6px;">
-          <button style="background:var(--surface2);border:1px solid var(--border);color:var(--accent);padding:6px 10px;border-radius:3px;cursor:pointer;font-size:12px;" onclick="editeazaAngajat('${a.id}','${a.nume.replace(/'/g,"\\'")}','${(a.departament||'').replace(/'/g,"\\'")}')">✏</button>
-          <button class="btn-danger" onclick="stergeAngajat('${a.id}','${a.nume}')">✕</button>
+          <button style="background:var(--surface2);border:1px solid var(--border);color:var(--accent);padding:6px 10px;border-radius:3px;cursor:pointer;font-size:12px;" onclick="editeazaAngajat('${a.id}','${numeEsc}','${deptEsc}')">✏</button>
+          <button class="btn-danger" onclick="stergeAngajat('${a.id}','${numeEsc}')">✕</button>
         </div>` : ''}
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function populateAngajatiSelect() {
@@ -1353,9 +1434,10 @@ window.adaugaAngajat = async () => {
   const dept = document.getElementById('ang-dept').value.trim();
   if (!nume) { showToast('Introduceți un nume!', true); return; }
 
-  // Verifică dacă există deja un angajat cu același nume
-  const duplicat = angajatiData.find(a => a.nume.toLowerCase() === nume.toLowerCase());
-  if (duplicat) { showToast(`"${nume}" există deja în listă!`, true); return; }
+  // Verifică duplicat direct din Firestore
+  const q = query(collection(db, 'angajati'), where('nume', '==', nume));
+  const snap = await getDocs(q);
+  if (!snap.empty) { showToast(`"${nume}" există deja în listă!`, true); return; }
 
   await addDoc(collection(db, 'angajati'), { nume, departament: dept, creatLa: serverTimestamp() });
   closeModal('modal-add-angajat');
@@ -1425,7 +1507,7 @@ window.updateSizeOptions = () => {
     sel.value = 'N/A';
     const q = h.cantitate || 0;
     info.textContent = `Stoc disponibil: ${q} bucăți`;
-    info.style.color = q <= 3 ? 'var(--red)' : 'var(--green)';
+    info.style.color = q <= PRAG_SCAZUT ? 'var(--red)' : 'var(--green)';
   } else {
     marimeRow.style.display = '';
     sel.innerHTML = '<option value="">— Mărime —</option>' +
@@ -1445,7 +1527,7 @@ function updateStocInfo() {
   if (!hId || !m || !stocData[hId]) { info.textContent = ''; return; }
   const q = (stocData[hId].marimi && stocData[hId].marimi[m]) || 0;
   info.textContent = `Stoc disponibil: ${q} bucăți`;
-  info.style.color = q <= 3 ? 'var(--red)' : 'var(--green)';
+  info.style.color = q <= PRAG_SCAZUT ? 'var(--red)' : 'var(--green)';
 }
 
 // =============================================
