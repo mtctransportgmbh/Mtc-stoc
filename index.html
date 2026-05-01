@@ -1383,7 +1383,6 @@ window.salveazaAngajat = async () => {
   const dept = document.getElementById('edit-ang-dept').value.trim();
   if (!nume) { showToast('Numele nu poate fi gol!', true); return; }
   await updateDoc(doc(db, 'angajati', id), { nume, departament: dept });
-  await loadAngajati();
   closeModal('modal-edit-angajat');
   showToast(`Angajat actualizat: "${nume}"`);
 };
@@ -1918,7 +1917,6 @@ window.seedData = async () => {
 
   await batch.commit();
   showToast('✅ Date importate cu succes! 10 articole + 50 angajați.');
-  await loadAngajati();
 };
 
 // =============================================
