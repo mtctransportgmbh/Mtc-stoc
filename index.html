@@ -697,6 +697,11 @@ tr:hover td { background: var(--surface2); }
       </div>
       <div class="search-bar">
         <input class="search-input" type="text" id="search-adaugari" placeholder="Caută după articol, observații..." oninput="filterAdaugari()">
+        <select class="form-select" style="width:auto;" id="filter-tip-adaugare" onchange="filterAdaugari()">
+          <option value="">Toate</option>
+          <option value="corectie">Doar corecții</option>
+          <option value="adaugare">Doar adăugări</option>
+        </select>
       </div>
       <div class="table-wrap">
         <table>
@@ -1221,8 +1226,14 @@ function renderStoc() {
 function renderStats() {
   const haine = Object.values(stocData);
   const totalArticole = haine.length;
-  const totalBucati = haine.reduce((s, h) => s + MARIMI.reduce((ss, m) => ss + ((h.marimi && h.marimi[m]) || 0), 0), 0);
-  const tipuriScazute = haine.filter(h => MARIMI.some(m => ((h.marimi && h.marimi[m]) || 0) <= 3 && (h.marimi && h.marimi[m]) > 0)).length;
+  const totalBucati = haine.reduce((s, h) => {
+    if (FARA_MARIMI.includes(h.denumire)) return s + (h.cantitate || 0);
+    return s + MARIMI.reduce((ss, m) => ss + ((h.marimi && h.marimi[m]) || 0), 0);
+  }, 0);
+  const tipuriScazute = haine.filter(h => {
+    if (FARA_MARIMI.includes(h.denumire)) return (h.cantitate || 0) <= 3 && (h.cantitate || 0) > 0;
+    return MARIMI.some(m => ((h.marimi && h.marimi[m]) || 0) <= 3 && (h.marimi && h.marimi[m]) > 0);
+  }).length;
   document.getElementById('stats-row').innerHTML = `
     <div class="stat-card"><div class="stat-label">Tipuri Articole</div><div class="stat-value">${totalArticole}</div></div>
     <div class="stat-card"><div class="stat-label">Total Bucăți</div><div class="stat-value">${totalBucati}</div></div>
@@ -1669,13 +1680,17 @@ function renderAdaugari() {
   const tbody = document.getElementById('adaugari-tbody');
   if (!tbody) return;
   const search = (document.getElementById('search-adaugari')?.value || '').toLowerCase();
+  const tip = document.getElementById('filter-tip-adaugare')?.value || '';
   let rows = adaugariData;
   if (search) rows = rows.filter(r =>
     (r.hainaDenumire || '').toLowerCase().includes(search) ||
     (r.observatii || '').toLowerCase().includes(search)
   );
+  if (tip === 'corectie') rows = rows.filter(r => (r.observatii || '').startsWith('CORECȚIE:'));
+  if (tip === 'adaugare') rows = rows.filter(r => !(r.observatii || '').startsWith('CORECȚIE:'));
+
   if (rows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;">Nicio adăugare înregistrată.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;">Nicio înregistrare.</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(r => {
@@ -1683,13 +1698,20 @@ function renderAdaugari() {
     const data = dt.toLocaleDateString('ro-RO', {day:'2-digit', month:'2-digit', year:'numeric'});
     const ora = dt.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
     const marime = r.marime && r.marime !== '—' ? `<span class="badge-size">${r.marime}</span>` : '<span style="color:var(--muted)">—</span>';
+    const eCorectie = (r.observatii || '').startsWith('CORECȚIE:');
+    const cantTag = eCorectie
+      ? `<span class="qty-tag" style="color:${r.cantitate >= 0 ? 'var(--green)' : 'var(--red)'};">${r.cantitate >= 0 ? '+' : ''}${r.cantitate}</span>`
+      : `<span class="qty-tag" style="color:var(--green);">+${r.cantitate || 0}</span>`;
+    const tipBadge = eCorectie
+      ? `<span style="background:#2a1515;color:var(--red);font-size:9px;padding:2px 6px;border-radius:3px;letter-spacing:1px;">CORECȚIE</span>`
+      : `<span style="background:#0a1a0a;color:var(--green);font-size:9px;padding:2px 6px;border-radius:3px;letter-spacing:1px;">ADĂUGARE</span>`;
     return `<tr>
       <td style="white-space:nowrap;">${data}</td>
       <td style="font-family:var(--font-mono);color:var(--accent);font-size:12px;">${ora}</td>
-      <td style="font-weight:500;">${r.hainaDenumire || '—'}</td>
+      <td style="font-weight:500;">${r.hainaDenumire || '—'} ${tipBadge}</td>
       <td>${marime}</td>
-      <td><span class="qty-tag" style="color:var(--green);">+${r.cantitate || 0}</span></td>
-      <td style="color:var(--muted);font-size:12px;">${r.observatii || '—'}</td>
+      <td>${cantTag}</td>
+      <td style="color:var(--muted);font-size:12px;">${eCorectie ? (r.observatii || '').replace('CORECȚIE: ','') : (r.observatii || '—')}</td>
     </tr>`;
   }).join('');
 }
