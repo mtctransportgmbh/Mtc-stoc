@@ -985,21 +985,29 @@ import {
   serverTimestamp, Timestamp, writeBatch, where, enableNetwork
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// =============================================
+// 🔥 CONFIGURARE FIREBASE
+// =============================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDidhCFWRqGM6i--qJwJz3_R5U9oT3k1to",
+  authDomain: "stoc-haine.firebaseapp.com",
+  projectId: "stoc-haine",
+  storageBucket: "stoc-haine.firebasestorage.app",
+  messagingSenderId: "1077110517965",
+  appId: "1:1077110517965:web:e00c95da16f63b50f83984"
+};
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Forțează reconectarea Firestore când pagina revine în prim-plan
+// Forțează reconectarea când revii pe tab/fereastră
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    enableNetwork(db).catch(() => {});
-  }
+  if (document.visibilityState === 'visible') enableNetwork(db).catch(() => {});
 });
-window.addEventListener('focus', () => {
-  enableNetwork(db).catch(() => {});
-});
+window.addEventListener('focus', () => enableNetwork(db).catch(() => {}));
 
-// Indicator conexiune internet
+// Indicator conexiune
 function updateConnDot(online) {
   const dot = document.getElementById('conn-dot');
   if (!dot) return;
