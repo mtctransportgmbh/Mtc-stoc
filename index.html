@@ -607,6 +607,7 @@ tr:hover td { background: var(--surface2); }
         <div class="section-title">STOC CURENT</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button class="btn-action admin-only" onclick="openModal('modal-add-stoc')">+ ADAUGĂ STOC</button>
+          <button class="btn-secondary admin-only" onclick="openModal('modal-corecteaza-stoc')" style="border-color:var(--red);color:var(--red);">✏ CORECTEAZĂ STOC</button>
           <button class="btn-action admin-only" onclick="openModal('modal-add-haina')">+ ARTICOL NOU</button>
         </div>
       </div>
@@ -805,6 +806,48 @@ tr:hover td { background: var(--surface2); }
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeModal('modal-add-stoc')">Anulează</button>
       <button class="btn-action" onclick="adaugaStoc()">ADAUGĂ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Haina Modal -->
+<div class="modal-overlay" id="modal-corecteaza-stoc">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">CORECTEAZĂ STOC</div>
+      <button class="modal-close" onclick="closeModal('modal-corecteaza-stoc')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Setează cantitatea exactă — folosește când stocul real diferă de cel din sistem.</p>
+      <div class="form-field">
+        <label class="form-label">Articol</label>
+        <select class="form-select" id="cor-haina" onchange="updateCorectareMarime()">
+          <option value="">— Selectează —</option>
+        </select>
+      </div>
+      <div class="form-field" id="cor-marime-row">
+        <label class="form-label">Mărime</label>
+        <select class="form-select" id="cor-marime" onchange="updateCorectareStocCurent()">
+          <option value="">— Mărime —</option>
+          <option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Stoc actual în sistem</label>
+        <div id="cor-stoc-curent" style="font-family:var(--font-mono);font-size:24px;color:var(--accent);padding:8px 0;">—</div>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Cantitate corectă (număr real)</label>
+        <input type="number" class="form-input" id="cor-qty" min="0" placeholder="ex: 5">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Motiv corecție</label>
+        <input type="text" class="form-input" id="cor-motiv" placeholder="ex: inventar, pierdere, eroare...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-corecteaza-stoc')">Anulează</button>
+      <button class="btn-action" style="background:var(--red);" onclick="corecteazaStoc()">SETEAZĂ CANTITATEA</button>
     </div>
   </div>
 </div>
@@ -1274,6 +1317,7 @@ function updateStocSelects() {
   const opts = '<option value="">— Selectează —</option>' + haine.map(h => `<option value="${h.id}">${h.denumire}</option>`).join('');
   document.getElementById('stoc-haina').innerHTML = opts;
   document.getElementById('dist-haina').innerHTML = opts;
+  if (document.getElementById('cor-haina')) document.getElementById('cor-haina').innerHTML = opts;
   // filter dropdown in istoric
   const fh = document.getElementById('filter-haina');
   if (fh) fh.innerHTML = '<option value="">Toate articolele</option>' + haine.map(h => `<option>${h.denumire}</option>`).join('');
@@ -1539,8 +1583,77 @@ window.adaugaStoc = async () => {
 };
 
 // =============================================
-// ADĂUGĂRI STOC — tab admin
+// CORECTEAZĂ STOC — setează cantitate exactă
 // =============================================
+window.updateCorectareMarime = () => {
+  const hId = document.getElementById('cor-haina').value;
+  const fara = hId && FARA_MARIMI.includes(stocData[hId]?.denumire);
+  document.getElementById('cor-marime-row').style.display = fara ? 'none' : '';
+  document.getElementById('cor-marime').value = '';
+  document.getElementById('cor-stoc-curent').textContent = '—';
+  if (fara && hId) {
+    const q = stocData[hId]?.cantitate || 0;
+    document.getElementById('cor-stoc-curent').textContent = q + ' buc';
+  }
+};
+
+window.updateCorectareStocCurent = () => {
+  const hId = document.getElementById('cor-haina').value;
+  const m = document.getElementById('cor-marime').value;
+  if (!hId || !m) { document.getElementById('cor-stoc-curent').textContent = '—'; return; }
+  const q = stocData[hId]?.marimi?.[m] || 0;
+  document.getElementById('cor-stoc-curent').textContent = q + ' buc';
+};
+
+window.corecteazaStoc = async () => {
+  const hId = document.getElementById('cor-haina').value;
+  const motiv = document.getElementById('cor-motiv').value.trim();
+  const nouaQty = parseInt(document.getElementById('cor-qty').value);
+  if (!hId) { showToast('Selectează un articol!', true); return; }
+  if (isNaN(nouaQty) || nouaQty < 0) { showToast('Introduceți o cantitate validă (≥ 0)!', true); return; }
+
+  const haina = stocData[hId];
+  const fara = FARA_MARIMI.includes(haina?.denumire);
+  const marime = fara ? '—' : document.getElementById('cor-marime').value;
+  if (!fara && !marime) { showToast('Selectează o mărime!', true); return; }
+
+  const stocVechi = fara
+    ? (haina?.cantitate || 0)
+    : (haina?.marimi?.[marime] || 0);
+
+  if (!confirm(`Schimbi stocul ${haina.denumire}${fara ? '' : ' ' + marime} de la ${stocVechi} → ${nouaQty} bucăți?`)) return;
+
+  const batch = writeBatch(db);
+  const stocRef = doc(db, 'stoc', hId);
+
+  if (fara) {
+    batch.update(stocRef, { cantitate: nouaQty });
+  } else {
+    batch.update(stocRef, { [`marimi.${marime}`]: nouaQty });
+  }
+
+  // Salvează în adaugari cu diferența
+  const diferenta = nouaQty - stocVechi;
+  const adaugareRef = doc(collection(db, 'adaugari'));
+  batch.set(adaugareRef, {
+    hainaId: hId,
+    hainaDenumire: haina?.denumire || '—',
+    marime,
+    cantitate: diferenta,
+    observatii: `CORECȚIE: ${stocVechi}→${nouaQty}${motiv ? ' | ' + motiv : ''}`,
+    data: serverTimestamp()
+  });
+
+  await batch.commit();
+  closeModal('modal-corecteaza-stoc');
+  document.getElementById('cor-haina').value = '';
+  document.getElementById('cor-marime').value = '';
+  document.getElementById('cor-qty').value = '';
+  document.getElementById('cor-motiv').value = '';
+  document.getElementById('cor-stoc-curent').textContent = '—';
+  showToast(`✅ Stoc corectat: ${haina.denumire}${fara ? '' : ' ' + marime} = ${nouaQty} buc`);
+  loadAdaugari();
+};
 let adaugariData = [];
 let unsubAdaugari = null;
 
