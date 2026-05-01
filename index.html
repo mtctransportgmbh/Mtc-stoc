@@ -759,7 +759,14 @@ tr:hover td { background: var(--surface2); }
           <div id="marimi-list" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
         </div>
         <div class="card">
-          <div class="card-title" style="font-size:18px;">IMPORT DATE INIȚIALE</div>
+          <div class="card-title" style="font-size:18px;">CURĂȚĂ ISTORIC</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Șterge definitiv înregistrările. Acțiunea nu poate fi anulată.</p>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <button class="btn-danger" style="width:100%;padding:12px;font-size:14px;" onclick="curatistoric('istoric')">🗑 Șterge tot istoricul distribuirilor</button>
+            <button class="btn-danger" style="width:100%;padding:12px;font-size:14px;" onclick="curatistoric('adaugari')">🗑 Șterge tot istoricul adăugărilor</button>
+            <button class="btn-danger" style="width:100%;padding:12px;font-size:14px;background:#5a0000;" onclick="curatistoric('tot')">🗑 Șterge TOT (distribuiri + adăugări)</button>
+          </div>
+        </div>
           <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Importă hainele și angajații din Excel în Firebase.</p>
           <p style="font-size:11px;color:var(--red);margin-bottom:16px;">⚠️ Apasă o singură dată! Verifică mai întâi că stocul e gol.</p>
           <button class="btn-action" style="width:100%;font-size:20px;padding:16px;" onclick="seedData()">⬆ IMPORTĂ DATE DIN EXCEL</button>
@@ -1851,6 +1858,31 @@ window.seedData = async () => {
   await batch.commit();
   showToast('✅ Date importate cu succes! 10 articole + 50 angajați.');
   await loadAngajati();
+};
+
+// =============================================
+// CURĂȚĂ ISTORIC
+// =============================================
+window.curatistoric = async (tip) => {
+  const mesaje = {
+    istoric:  'Ștergi TOT istoricul distribuirilor?\nAceastă acțiune nu poate fi anulată!',
+    adaugari: 'Ștergi TOT istoricul adăugărilor și corecțiilor?\nAceastă acțiune nu poate fi anulată!',
+    tot:      'Ștergi TOT istoricul (distribuiri + adăugări + corecții)?\nAceastă acțiune nu poate fi anulată!',
+  };
+  if (!confirm(mesaje[tip])) return;
+
+  const colectii = tip === 'tot' ? ['istoric', 'adaugari'] : [tip];
+  let total = 0;
+  for (const col of colectii) {
+    const snap = await getDocs(collection(db, col));
+    if (!snap.empty) {
+      const batch = writeBatch(db);
+      snap.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      total += snap.size;
+    }
+  }
+  showToast(`✅ ${total} înregistrări șterse.`);
 };
 
 window.showSection = (id, tab) => {
