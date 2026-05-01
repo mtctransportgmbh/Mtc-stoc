@@ -619,6 +619,7 @@ if (savedVersion && savedVersion !== APP_VERSION) {
     <div class="logo" style="font-size:20px;letter-spacing:3px;">MTC TRANSPORT <span style="font-size:13px;color:var(--muted);letter-spacing:1px;font-family:var(--font-body);">Gestiune stoc haine</span></div>
     <div class="header-right">
       <div class="user-badge">
+        <span id="conn-dot" style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:2px;" title="Conectat"></span>
         <span id="header-username">—</span>
         <span class="user-role" id="header-role">—</span>
       </div>
@@ -981,24 +982,33 @@ import {
 import {
   getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc,
   updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, increment,
-  serverTimestamp, Timestamp, writeBatch, where
+  serverTimestamp, Timestamp, writeBatch, where, enableNetwork
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-// =============================================
-// 🔥 CONFIGURARE FIREBASE
-// =============================================
-const firebaseConfig = {
-  apiKey: "AIzaSyDidhCFWRqGM6i--qJwJz3_R5U9oT3k1to",
-  authDomain: "stoc-haine.firebaseapp.com",
-  projectId: "stoc-haine",
-  storageBucket: "stoc-haine.firebasestorage.app",
-  messagingSenderId: "1077110517965",
-  appId: "1:1077110517965:web:e00c95da16f63b50f83984"
-};
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// Forțează reconectarea Firestore când pagina revine în prim-plan
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    enableNetwork(db).catch(() => {});
+  }
+});
+window.addEventListener('focus', () => {
+  enableNetwork(db).catch(() => {});
+});
+
+// Indicator conexiune internet
+function updateConnDot(online) {
+  const dot = document.getElementById('conn-dot');
+  if (!dot) return;
+  dot.style.background = online ? 'var(--green)' : 'var(--red)';
+  dot.title = online ? 'Conectat' : 'Fără conexiune';
+}
+window.addEventListener('online', () => { updateConnDot(true); enableNetwork(db).catch(() => {}); });
+window.addEventListener('offline', () => updateConnDot(false));
+updateConnDot(navigator.onLine);
 
 // =============================================
 // STATE
@@ -1288,12 +1298,16 @@ function renderStats() {
 // =============================================
 // ANGAJATI
 // =============================================
-async function loadAngajati() {
-  const snap = await getDocs(query(collection(db, 'angajati'), orderBy('nume')));
-  angajatiData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  renderAngajati();
-  populateAngajatiSelect();
-  renderStats();
+let unsubAngajati = null;
+
+function loadAngajati() {
+  if (unsubAngajati) unsubAngajati();
+  unsubAngajati = onSnapshot(query(collection(db, 'angajati'), orderBy('nume')), snap => {
+    angajatiData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderAngajati();
+    populateAngajatiSelect();
+    renderStats();
+  });
 }
 
 function renderAngajati() {
@@ -1336,7 +1350,6 @@ window.adaugaAngajat = async () => {
   if (duplicat) { showToast(`"${nume}" există deja în listă!`, true); return; }
 
   await addDoc(collection(db, 'angajati'), { nume, departament: dept, creatLa: serverTimestamp() });
-  await loadAngajati();
   closeModal('modal-add-angajat');
   document.getElementById('ang-name').value = '';
   document.getElementById('ang-dept').value = '';
@@ -1346,7 +1359,6 @@ window.adaugaAngajat = async () => {
 window.stergeAngajat = async (id, nume) => {
   if (!confirm(`Ștergi angajatul "${nume}"?`)) return;
   await deleteDoc(doc(db, 'angajati', id));
-  await loadAngajati();
   showToast(`Angajat "${nume}" șters.`);
 };
 
