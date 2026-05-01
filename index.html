@@ -129,6 +129,22 @@ body {
   letter-spacing: 0.5px;
 }
 .auth-switch:hover { color: var(--accent); }
+.btn-operator {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 16px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 3px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.15s;
+  text-align: center;
+}
+.btn-operator:hover { border-color: var(--accent); color: var(--accent); background: #1a1500; }
+.btn-operator:active { transform: scale(0.98); }
 .btn-primary {
   width: 100%;
   background: var(--accent);
@@ -582,16 +598,12 @@ if (savedVersion && savedVersion !== APP_VERSION) {
 
     <!-- OPERATOR LOGIN (default) -->
     <div id="operator-login">
-      <div class="auth-field">
-        <label>Selectează utilizatorul tău</label>
-        <select class="auth-select" id="operator-select">
-          <option value="">— Cine ești? —</option>
-          <option value="operator1">Cristi</option>
-          <option value="operator2">Mihaela</option>
-          <option value="operator3">Raluca</option>
-        </select>
+      <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;">Selectează utilizatorul</p>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button class="btn-operator" onclick="doOperatorLogin('operator1')">Cristi</button>
+        <button class="btn-operator" onclick="doOperatorLogin('operator2')">Mihaela</button>
+        <button class="btn-operator" onclick="doOperatorLogin('operator3')">Raluca</button>
       </div>
-      <button class="btn-primary" onclick="doOperatorLogin()">INTRĂ</button>
       <div class="auth-switch" onclick="toggleAdminLogin()">🔐 Sunt administratorul</div>
     </div>
 
@@ -1076,15 +1088,12 @@ window.toggleAdminLogin = () => {
 // =============================================
 // OPERATOR LOGIN — fără parolă
 // =============================================
-window.doOperatorLogin = () => {
-  const sel = document.getElementById('operator-select').value;
+window.doOperatorLogin = (opId) => {
   const err = document.getElementById('auth-error');
-  if (!sel) { err.textContent = 'Selectează utilizatorul tău!'; return; }
-  const op = OPERATORI[sel];
+  const op = OPERATORI[opId];
   if (!op) { err.textContent = 'Utilizator invalid.'; return; }
-  // Salvează în localStorage (persistent, rămâne după închidere browser)
-  localStorage.setItem('hermes_operator', JSON.stringify({ id: sel, ...op, role: 'operator' }));
-  currentUser = { uid: sel, email: sel, isOperator: true };
+  localStorage.setItem('hermes_operator', JSON.stringify({ id: opId, ...op, role: 'operator' }));
+  currentUser = { uid: opId, email: opId, isOperator: true };
   currentRole = 'operator';
   currentOperatorName = op.displayName;
   startApp();
