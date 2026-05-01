@@ -24,6 +24,11 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='20' fill='%230a0a0a'/><text x='96' y='125' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='72' fill='%23e8c547' text-anchor='middle'>MTC</text></svg>">
 
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='20' fill='%230a0a0a'/><text x='96' y='125' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='72' fill='%23e8c547' text-anchor='middle'>MTC</text></svg>">
+
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -557,6 +562,17 @@ tr:hover td { background: var(--surface2); }
 </style>
 </head>
 <body>
+<script>
+// Versiune aplicatie — schimba acest numar la fiecare deploy nou pe GitHub
+const APP_VERSION = '1.0';
+const savedVersion = localStorage.getItem('mtc_app_version');
+if (savedVersion && savedVersion !== APP_VERSION) {
+  localStorage.setItem('mtc_app_version', APP_VERSION);
+  window.location.reload(true);
+} else {
+  localStorage.setItem('mtc_app_version', APP_VERSION);
+}
+</script>
 
 <!-- AUTH -->
 <div id="auth-screen">
