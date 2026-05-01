@@ -3,7 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MTC — Stoc Haine</title>
+<title>MTC TRANSPORT — Gestiune stoc haine</title>
+
+<meta name="theme-color" content="#0a0a0a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MTC - gestiune haine">
+
+<link rel="manifest" href="data:application/json,{
+  &quot;name&quot;: &quot;MTC TRANSPORT — Stoc Haine&quot;,
+  &quot;short_name&quot;: &quot;MTC - gestiune haine&quot;,
+  &quot;start_url&quot;: &quot;.&quot;,
+  &quot;display&quot;: &quot;standalone&quot;,
+  &quot;background_color&quot;: &quot;%230a0a0a&quot;,
+  &quot;theme_color&quot;: &quot;%230a0a0a&quot;,
+  &quot;icons&quot;: [{&quot;src&quot;: &quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='20' fill='%230a0a0a'/%3E%3Ctext x='96' y='125' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='72' fill='%23e8c547' text-anchor='middle'%3EMTC%3C/text%3E%3C/svg%3E&quot;, &quot;sizes&quot;: &quot;192x192&quot;, &quot;type&quot;: &quot;image/svg+xml&quot;}]
+}">
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='20' fill='%230a0a0a'/><text x='96' y='125' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='72' fill='%23e8c547' text-anchor='middle'>MTC</text></svg>">
+
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='20' fill='%230a0a0a'/><text x='96' y='125' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='72' fill='%23e8c547' text-anchor='middle'>MTC</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -541,8 +561,8 @@ tr:hover td { background: var(--surface2); }
 <!-- AUTH -->
 <div id="auth-screen">
   <div class="auth-box">
-    <div class="auth-logo" style="font-size:36px;letter-spacing:3px;">MTC STOC HAINE</div>
-    <div class="auth-subtitle">Gestiune Stoc Haine</div>
+    <div class="auth-logo" style="font-size:36px;letter-spacing:3px;">MTC TRANSPORT</div>
+    <div class="auth-subtitle">Gestiune stoc haine</div>
 
     <!-- OPERATOR LOGIN (default) -->
     <div id="operator-login">
@@ -580,7 +600,7 @@ tr:hover td { background: var(--surface2); }
 <!-- APP -->
 <div id="app">
   <header>
-    <div class="logo" style="font-size:20px;letter-spacing:3px;">MTC STOC HAINE</div>
+    <div class="logo" style="font-size:20px;letter-spacing:3px;">MTC TRANSPORT <span style="font-size:13px;color:var(--muted);letter-spacing:1px;font-family:var(--font-body);">Gestiune stoc haine</span></div>
     <div class="header-right">
       <div class="user-badge">
         <span id="header-username">—</span>
