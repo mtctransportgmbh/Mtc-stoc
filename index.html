@@ -1330,6 +1330,11 @@ window.adaugaAngajat = async () => {
   const nume = document.getElementById('ang-name').value.trim();
   const dept = document.getElementById('ang-dept').value.trim();
   if (!nume) { showToast('Introduceți un nume!', true); return; }
+
+  // Verifică dacă există deja un angajat cu același nume
+  const duplicat = angajatiData.find(a => a.nume.toLowerCase() === nume.toLowerCase());
+  if (duplicat) { showToast(`"${nume}" există deja în listă!`, true); return; }
+
   await addDoc(collection(db, 'angajati'), { nume, departament: dept, creatLa: serverTimestamp() });
   await loadAngajati();
   closeModal('modal-add-angajat');
