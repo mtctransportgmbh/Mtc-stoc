@@ -645,6 +645,7 @@ if (savedVersion && savedVersion !== APP_VERSION) {
     <div class="nav-tab" onclick="showSection('istoric', this)">📋 Istoric</div>
     <div class="nav-tab admin-only" onclick="showSection('angajati', this)">👥 Angajați</div>
     <div class="nav-tab admin-only" onclick="showSection('adaugari', this)">📥 Adăugări Stoc</div>
+    <div class="nav-tab admin-only" onclick="showSection('raport', this)">📊 Raport Persoane</div>
     <div class="nav-tab admin-only" onclick="showSection('admin', this)">⚙️ Admin</div>
   </div>
 
@@ -760,6 +761,20 @@ if (savedVersion && savedVersion !== APP_VERSION) {
           <tbody id="adaugari-tbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;">Se încarcă...</td></tr></tbody>
         </table>
       </div>
+    </div>
+
+    <!-- RAPORT PERSOANE -->
+    <div class="section admin-only" id="section-raport">
+      <div class="section-header">
+        <div class="section-title">RAPORT PERSOANE</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <select class="form-select" style="width:auto;" id="raport-filter-angajat" onchange="renderRaport()">
+            <option value="">Toți angajații</option>
+          </select>
+          <button class="btn-secondary" onclick="exportCSVRaport()">⬇ Export CSV</button>
+        </div>
+      </div>
+      <div id="raport-content"></div>
     </div>
 
     <!-- ADMIN -->
@@ -1401,6 +1416,7 @@ function loadAngajati() {
     angajatiData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderAngajati();
     populateAngajatiSelect();
+    populateRaportFilter();
     renderStats();
   });
 }
@@ -2013,6 +2029,102 @@ window.seedData = async () => {
 // =============================================
 // CURĂȚĂ ISTORIC
 // =============================================
+// =============================================
+// RAPORT PERSOANE
+// =============================================
+function populateRaportFilter() {
+  const sel = document.getElementById('raport-filter-angajat');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Toți angajații</option>' +
+    angajatiData.map(a => `<option value="${a.id}" ${a.id === cur ? 'selected' : ''}>${a.nume}</option>`).join('');
+}
+
+window.renderRaport = () => {
+  const div = document.getElementById('raport-content');
+  if (!div) return;
+  const filterId = document.getElementById('raport-filter-angajat')?.value || '';
+
+  // Grupează istoricul după angajat
+  const grupate = {};
+  istoricData.forEach(r => {
+    if (filterId && r.angajatId !== filterId) return;
+    const key = r.angajatId || r.angajatNume;
+    if (!grupate[key]) grupate[key] = { nume: r.angajatNume, items: [] };
+    grupate[key].items.push(r);
+  });
+
+  const angajatiSortati = Object.values(grupate).sort((a, b) => a.nume.localeCompare(b.nume));
+
+  if (angajatiSortati.length === 0) {
+    div.innerHTML = '<div class="loading">Nicio distribuire înregistrată.</div>';
+    return;
+  }
+
+  div.innerHTML = angajatiSortati.map(ang => {
+    // Grupează itemele pe articol+marime
+    const rezumat = {};
+    let totalBuc = 0;
+    ang.items.forEach(item => {
+      const cheie = `${item.hainaDenumire}||${item.marime}`;
+      if (!rezumat[cheie]) rezumat[cheie] = { haina: item.hainaDenumire, marime: item.marime, cantitate: 0 };
+      rezumat[cheie].cantitate += (item.cantitate || 1);
+      totalBuc += (item.cantitate || 1);
+    });
+
+    const randuri = Object.values(rezumat)
+      .sort((a, b) => a.haina.localeCompare(b.haina))
+      .map(r => {
+        const marime = r.marime && r.marime !== '—'
+          ? `<span class="badge-size">${r.marime}</span>`
+          : '<span style="color:var(--muted)">—</span>';
+        return `<tr>
+          <td style="font-weight:500;">${r.haina}</td>
+          <td>${marime}</td>
+          <td><span class="qty-tag">${r.cantitate}</span></td>
+        </tr>`;
+      }).join('');
+
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:12px;overflow:hidden;">
+      <div style="background:var(--surface2);padding:12px 18px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-family:var(--font-display);font-size:20px;letter-spacing:2px;">${ang.nume}</div>
+        <div style="font-family:var(--font-mono);font-size:12px;color:var(--accent);">TOTAL: ${totalBuc} buc · ${ang.items.length} distribuiri</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:#111;">
+            <th style="padding:8px 18px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Articol</th>
+            <th style="padding:8px 18px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Mărime</th>
+            <th style="padding:8px 18px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Cantitate</th>
+          </tr>
+        </thead>
+        <tbody>${randuri}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+};
+
+window.exportCSVRaport = () => {
+  const filterId = document.getElementById('raport-filter-angajat')?.value || '';
+  const rows = [['Angajat', 'Articol', 'Marime', 'Cantitate']];
+  const grupate = {};
+  istoricData.forEach(r => {
+    if (filterId && r.angajatId !== filterId) return;
+    const key = `${r.angajatId}||${r.hainaDenumire}||${r.marime}`;
+    if (!grupate[key]) grupate[key] = { nume: r.angajatNume, haina: r.hainaDenumire, marime: r.marime, cantitate: 0 };
+    grupate[key].cantitate += (r.cantitate || 1);
+  });
+  Object.values(grupate)
+    .sort((a, b) => a.nume.localeCompare(b.nume))
+    .forEach(r => rows.push([r.nume, r.haina, r.marime, r.cantitate]));
+  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `raport_persoane_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+};
+
 window.curatistoric = async (tip) => {
   const mesaje = {
     istoric:  'Ștergi TOT istoricul distribuirilor?\nAceastă acțiune nu poate fi anulată!',
@@ -2047,6 +2159,7 @@ window.showSection = (id, tab) => {
   tab?.classList.add('active');
   if (id === 'distribuire') loadRecentDistribuiri();
   if (id === 'adaugari') renderAdaugari();
+  if (id === 'raport') { populateRaportFilter(); renderRaport(); }
 };
 
 window.openModal = (id) => {
