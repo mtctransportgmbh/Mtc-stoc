@@ -781,39 +781,21 @@ if (savedVersion && savedVersion !== APP_VERSION) {
     <div class="section admin-only" id="section-admin">
       <div class="section-title" style="margin-bottom:20px;">ADMINISTRARE</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;">
-        <div class="card">
+          <div class="card">
           <div class="card-title" style="font-size:18px;">GESTIONARE OPERATORI</div>
           <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Deconectează un operator de pe telefonul lui</p>
           <div id="operators-admin-list">
-            <div id="op-row-operator1" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
-              <div>
-                <div style="font-size:13px;font-weight:600;">Cristi</div>
-                <div id="op-status-operator1" style="font-size:11px;color:var(--muted);">Verificare...</div>
-              </div>
-              <div style="display:flex;gap:8px;">
-                <button class="btn-danger" onclick="forceLogoutOperator('operator1','Cristi')">Deconectează</button>
-                <button class="btn-secondary" style="padding:6px 10px;font-size:12px;" onclick="cancelForceLogout('operator1','Cristi')">Anulează</button>
-              </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+              <div><div style="font-size:13px;font-weight:600;">Cristi</div><div id="op-status-operator1" style="font-size:11px;color:var(--muted);">Verificare...</div></div>
+              <button class="btn-danger" onclick="forceLogoutOperator('operator1','Cristi')">Deconectează</button>
             </div>
-            <div id="op-row-operator2" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
-              <div>
-                <div style="font-size:13px;font-weight:600;">Mihaela</div>
-                <div id="op-status-operator2" style="font-size:11px;color:var(--muted);">Verificare...</div>
-              </div>
-              <div style="display:flex;gap:8px;">
-                <button class="btn-danger" onclick="forceLogoutOperator('operator2','Mihaela')">Deconectează</button>
-                <button class="btn-secondary" style="padding:6px 10px;font-size:12px;" onclick="cancelForceLogout('operator2','Mihaela')">Anulează</button>
-              </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+              <div><div style="font-size:13px;font-weight:600;">Mihaela</div><div id="op-status-operator2" style="font-size:11px;color:var(--muted);">Verificare...</div></div>
+              <button class="btn-danger" onclick="forceLogoutOperator('operator2','Mihaela')">Deconectează</button>
             </div>
-            <div id="op-row-operator3" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
-              <div>
-                <div style="font-size:13px;font-weight:600;">Raluca</div>
-                <div id="op-status-operator3" style="font-size:11px;color:var(--muted);">Verificare...</div>
-              </div>
-              <div style="display:flex;gap:8px;">
-                <button class="btn-danger" onclick="forceLogoutOperator('operator3','Raluca')">Deconectează</button>
-                <button class="btn-secondary" style="padding:6px 10px;font-size:12px;" onclick="cancelForceLogout('operator3','Raluca')">Anulează</button>
-              </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
+              <div><div style="font-size:13px;font-weight:600;">Raluca</div><div id="op-status-operator3" style="font-size:11px;color:var(--muted);">Verificare...</div></div>
+              <button class="btn-danger" onclick="forceLogoutOperator('operator3','Raluca')">Deconectează</button>
             </div>
           </div>
         </div>
@@ -938,9 +920,21 @@ if (savedVersion && savedVersion !== APP_VERSION) {
     <div class="modal-body">
       <div class="form-field">
         <label class="form-label">Denumire articol</label>
-        <input type="text" class="form-input" id="haina-name" placeholder="ex: TRICOU, BLUZA, JACHETĂ...">
+        <input type="text" class="form-input" id="haina-name" placeholder="ex: PANTALONI 46-54, TRICOU POLO...">
       </div>
-      <p style="font-size:12px;color:var(--muted);">Articolul va fi creat cu stoc 0 pentru toate mărimile (XS, S, M, L, XL). Adaugă cantitățile după.</p>
+      <div class="form-field">
+        <label class="form-label">Tip mărimi</label>
+        <select class="form-select" id="haina-tip-marimi" onchange="updateHainaMarimiInput()">
+          <option value="standard">Standard (XS, S, M, L, XL)</option>
+          <option value="numeric">Numerice personalizate (ex: 46, 48, 50...)</option>
+          <option value="fara">Fără mărimi (cantitate unică)</option>
+        </select>
+      </div>
+      <div class="form-field" id="haina-marimi-custom-row" style="display:none;">
+        <label class="form-label">Mărimi (separate prin virgulă)</label>
+        <input type="text" class="form-input" id="haina-marimi-custom" placeholder="ex: 46, 48, 50, 52, 54">
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Scrie mărimile separate prin virgulă. Stocul va fi 0 inițial.</div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeModal('modal-add-haina')">Anulează</button>
@@ -1103,10 +1097,12 @@ window.toggleAdminLogin = () => {
 // =============================================
 // OPERATOR LOGIN — fără parolă
 // =============================================
+// =============================================
+// OPERATOR LOGIN — click direct, fără PIN
+// =============================================
 window.doOperatorLogin = (opId) => {
-  const err = document.getElementById('auth-error');
   const op = OPERATORI[opId];
-  if (!op) { err.textContent = 'Utilizator invalid.'; return; }
+  if (!op) return;
   localStorage.setItem('hermes_operator', JSON.stringify({ id: opId, ...op, role: 'operator' }));
   currentUser = { uid: opId, email: opId, isOperator: true };
   currentRole = 'operator';
@@ -1278,6 +1274,23 @@ function loadStocRealtime() {
 const PRAG_SCAZUT = 7;
 const FARA_MARIMI = ['SAPCA', 'CACIULA'];
 
+function estefaraMarimi(h) {
+  return estefaraMarimi(h) || h.tipMarimi === 'fara';
+}
+
+function getMarimiArticol(h) {
+  if (estefaraMarimi(h)) return [];
+  if (h.tipMarimi === 'numeric' && h.marimiOrdine) return h.marimiOrdine;
+  if (h.marimi) {
+    const keys = Object.keys(h.marimi);
+    // sortare numerică dacă sunt numere, altfel după MARIMI standard
+    const toateNumerice = keys.every(k => !isNaN(parseFloat(k)));
+    if (toateNumerice) return keys.sort((a,b) => parseFloat(a) - parseFloat(b));
+    return MARIMI.filter(m => keys.includes(m));
+  }
+  return MARIMI;
+}
+
 function renderStoc() {
   const grid = document.getElementById('stoc-grid');
   const haine = Object.values(stocData).sort((a, b) => a.denumire.localeCompare(b.denumire));
@@ -1286,13 +1299,13 @@ function renderStoc() {
     return;
   }
   grid.innerHTML = haine.map(h => {
-    const fara = FARA_MARIMI.includes(h.denumire);
+    const fara = estefaraMarimi(h);
+    const numeEsc = h.denumire.replace(/'/g,"\\'");
     const deleteBtn = currentRole === 'admin'
-      ? `<button class="btn-danger" onclick="stergeHaina('${h.id}','${h.denumire}')">✕</button>` : '';
+      ? `<button class="btn-danger" onclick="stergeHaina('${h.id}','${numeEsc}')">✕</button>` : '';
 
     let sizesHtml, total;
     if (fara) {
-      // Fără mărimi — afișează doar cantitatea totală
       total = h.cantitate || 0;
       const cls = total === 0 ? 'zero' : total <= PRAG_SCAZUT ? 'low' : 'ok';
       sizesHtml = `<div style="padding:16px 20px;display:flex;align-items:center;gap:12px;">
@@ -1301,7 +1314,8 @@ function renderStoc() {
         <div style="font-size:11px;color:var(--muted);">bucăți</div>
       </div>`;
     } else {
-      const sizes = MARIMI.map(m => {
+      const marimiList = getMarimiArticol(h);
+      const sizes = marimiList.map(m => {
         const q = (h.marimi && h.marimi[m]) || 0;
         const cls = q === 0 ? 'zero' : q <= PRAG_SCAZUT ? 'low' : 'ok';
         return `<div class="size-cell">
@@ -1309,8 +1323,8 @@ function renderStoc() {
           <div class="size-qty ${cls}">${q}</div>
         </div>`;
       }).join('');
-      total = MARIMI.reduce((s, m) => s + ((h.marimi && h.marimi[m]) || 0), 0);
-      sizesHtml = `<div class="stoc-sizes">${sizes}</div>`;
+      total = marimiList.reduce((s, m) => s + ((h.marimi && h.marimi[m]) || 0), 0);
+      sizesHtml = `<div class="stoc-sizes" style="grid-template-columns:repeat(${Math.min(marimiList.length,6)},1fr)">${sizes}</div>`;
     }
 
     return `<div class="stoc-card">
@@ -1330,17 +1344,17 @@ function renderStats() {
   const haine = Object.values(stocData);
   const totalArticole = haine.length;
   const totalBucati = haine.reduce((s, h) => {
-    if (FARA_MARIMI.includes(h.denumire)) return s + (h.cantitate || 0);
-    return s + MARIMI.reduce((ss, m) => ss + ((h.marimi && h.marimi[m]) || 0), 0);
+    if (estefaraMarimi(h)) return s + (h.cantitate || 0);
+    const ml = getMarimiArticol(h); return s + ml.reduce((ss,m) => ss+((h.marimi&&h.marimi[m])||0),0);
   }, 0);
 
   // Numără combinații articol+mărime cu stoc ≤ 7
   let nrScazut = 0;
   haine.forEach(h => {
-    if (FARA_MARIMI.includes(h.denumire)) {
+    if (estefaraMarimi(h)) {
       if ((h.cantitate || 0) <= PRAG_SCAZUT) nrScazut++;
     } else {
-      MARIMI.forEach(m => {
+      getMarimiArticol(h).forEach(m => {
         if (((h.marimi && h.marimi[m]) || 0) <= PRAG_SCAZUT) nrScazut++;
       });
     }
@@ -1362,13 +1376,13 @@ window.showStocScazut = () => {
   const lista = [];
 
   haine.forEach(h => {
-    if (FARA_MARIMI.includes(h.denumire)) {
+    if (estefaraMarimi(h)) {
       const q = h.cantitate || 0;
       if (q <= PRAG_SCAZUT) {
         lista.push({ denumire: h.denumire, marime: '—', cantitate: q });
       }
     } else {
-      MARIMI.forEach(m => {
+      getMarimiArticol(h).forEach(m => {
         const q = (h.marimi && h.marimi[m]) || 0;
         if (q <= PRAG_SCAZUT) {
           lista.push({ denumire: h.denumire, marime: m, cantitate: q });
@@ -1524,7 +1538,7 @@ window.updateSizeOptions = () => {
     return;
   }
   const h = stocData[hId];
-  const fara = FARA_MARIMI.includes(h.denumire);
+  const fara = estefaraMarimi(h);
   if (fara) {
     // Fără mărimi — ascunde rândul și setează marime = 'N/A'
     marimeRow.style.display = 'none';
@@ -1536,7 +1550,7 @@ window.updateSizeOptions = () => {
   } else {
     marimeRow.style.display = '';
     sel.innerHTML = '<option value="">— Mărime —</option>' +
-      MARIMI.map(m => {
+      getMarimiArticol(h).map(m => {
         const q = (h.marimi && h.marimi[m]) || 0;
         return `<option value="${m}" ${q === 0 ? 'disabled style="color:#666"' : ''}>${m} (stoc: ${q})</option>`;
       }).join('');
@@ -1570,7 +1584,7 @@ window.distribuieHaine = async () => {
   if (qty < 1) { showToast('Cantitate invalidă!', true); return; }
 
   const haina = stocData[hId];
-  const fara = FARA_MARIMI.includes(haina?.denumire);
+  const fara = estefaraMarimi(haina);
 
   // Verifică stoc disponibil
   const stocCurent = fara
@@ -1705,9 +1719,16 @@ window.exportCSV = () => {
 // Toggle mărime în modal adaugă stoc
 window.updateStocModalMarime = () => {
   const hId = document.getElementById('stoc-haina').value;
-  const fara = hId && FARA_MARIMI.includes(stocData[hId]?.denumire);
+  if (!hId || !stocData[hId]) return;
+  const h = stocData[hId];
+  const fara = estefaraMarimi(h);
   document.getElementById('stoc-marime-row').style.display = fara ? 'none' : '';
   document.getElementById('stoc-qty-only').style.display = fara ? '' : 'none';
+  if (!fara) {
+    const sel = document.getElementById('stoc-marime');
+    sel.innerHTML = '<option value="">— Mărime —</option>' +
+      getMarimiArticol(h).map(m => `<option value="${m}">${m}</option>`).join('');
+  }
 };
 
 // =============================================
@@ -1719,7 +1740,7 @@ window.adaugaStoc = async () => {
   if (!hId) { showToast('Selectează un articol!', true); return; }
 
   const haina = stocData[hId];
-  const fara = FARA_MARIMI.includes(haina?.denumire);
+  const fara = estefaraMarimi(haina);
 
   let marime, qty;
   if (fara) {
@@ -1772,13 +1793,19 @@ window.adaugaStoc = async () => {
 // =============================================
 window.updateCorectareMarime = () => {
   const hId = document.getElementById('cor-haina').value;
-  const fara = hId && FARA_MARIMI.includes(stocData[hId]?.denumire);
+  if (!hId || !stocData[hId]) return;
+  const h = stocData[hId];
+  const fara = estefaraMarimi(h);
   document.getElementById('cor-marime-row').style.display = fara ? 'none' : '';
   document.getElementById('cor-marime').value = '';
   document.getElementById('cor-stoc-curent').textContent = '—';
-  if (fara && hId) {
-    const q = stocData[hId]?.cantitate || 0;
+  if (fara) {
+    const q = h.cantitate || 0;
     document.getElementById('cor-stoc-curent').textContent = q + ' buc';
+  } else {
+    const sel = document.getElementById('cor-marime');
+    sel.innerHTML = '<option value="">— Mărime —</option>' +
+      getMarimiArticol(h).map(m => `<option value="${m}">${m}</option>`).join('');
   }
 };
 
@@ -1798,7 +1825,7 @@ window.corecteazaStoc = async () => {
   if (isNaN(nouaQty) || nouaQty < 0) { showToast('Introduceți o cantitate validă (≥ 0)!', true); return; }
 
   const haina = stocData[hId];
-  const fara = FARA_MARIMI.includes(haina?.denumire);
+  const fara = estefaraMarimi(haina);
   const marime = fara ? '—' : document.getElementById('cor-marime').value;
   if (!fara && !marime) { showToast('Selectează o mărime!', true); return; }
 
@@ -1913,16 +1940,45 @@ window.exportCSVAdaugari = () => {
 // =============================================
 // ADAUGĂ HAINA
 // =============================================
+window.updateHainaMarimiInput = () => {
+  const tip = document.getElementById('haina-tip-marimi').value;
+  document.getElementById('haina-marimi-custom-row').style.display = tip === 'numeric' ? '' : 'none';
+};
+
 window.adaugaHaina = async () => {
   const name = document.getElementById('haina-name').value.trim().toUpperCase();
+  const tip = document.getElementById('haina-tip-marimi').value;
   if (!name) { showToast('Introduceți un nume!', true); return; }
   const existing = Object.values(stocData).find(h => h.denumire === name);
   if (existing) { showToast('Articolul există deja!', true); return; }
-  const marimi = {};
-  MARIMI.forEach(m => marimi[m] = 0);
-  await addDoc(collection(db, 'stoc'), { denumire: name, marimi, creatLa: serverTimestamp() });
+
+  let docData = { denumire: name, creatLa: serverTimestamp() };
+
+  if (tip === 'fara') {
+    docData.cantitate = 0;
+    docData.tipMarimi = 'fara';
+  } else if (tip === 'numeric') {
+    const marimiRaw = document.getElementById('haina-marimi-custom').value;
+    const marimiList = marimiRaw.split(',').map(m => m.trim()).filter(m => m !== '');
+    if (marimiList.length === 0) { showToast('Introdu cel puțin o mărime!', true); return; }
+    const marimi = {};
+    marimiList.forEach(m => marimi[m] = 0);
+    docData.marimi = marimi;
+    docData.tipMarimi = 'numeric';
+    docData.marimiOrdine = marimiList; // păstrăm ordinea
+  } else {
+    const marimi = {};
+    MARIMI.forEach(m => marimi[m] = 0);
+    docData.marimi = marimi;
+    docData.tipMarimi = 'standard';
+  }
+
+  await addDoc(collection(db, 'stoc'), docData);
   closeModal('modal-add-haina');
   document.getElementById('haina-name').value = '';
+  document.getElementById('haina-marimi-custom').value = '';
+  document.getElementById('haina-tip-marimi').value = 'standard';
+  document.getElementById('haina-marimi-custom-row').style.display = 'none';
   showToast(`Articol "${name}" creat!`);
 };
 
