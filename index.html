@@ -4,599 +4,179 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MTC TRANSPORT — Gestiune stoc haine</title>
-
 <meta name="theme-color" content="#0a0a0a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MTC - gestiune haine">
-
-<link rel="manifest" href="data:application/json,{
-  &quot;name&quot;: &quot;MTC TRANSPORT — Stoc Haine&quot;,
-  &quot;short_name&quot;: &quot;MTC - gestiune haine&quot;,
-  &quot;start_url&quot;: &quot;.&quot;,
-  &quot;display&quot;: &quot;standalone&quot;,
-  &quot;background_color&quot;: &quot;%230a0a0a&quot;,
-  &quot;theme_color&quot;: &quot;%230a0a0a&quot;,
-  &quot;icons&quot;: [{&quot;src&quot;: &quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='20' fill='%230a0a0a'/%3E%3Ctext x='96' y='125' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='72' fill='%23e8c547' text-anchor='middle'%3EMTC%3C/text%3E%3C/svg%3E&quot;, &quot;sizes&quot;: &quot;192x192&quot;, &quot;type&quot;: &quot;image/svg+xml&quot;}]
-}">
-
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='20' fill='%230a0a0a'/><text x='96' y='125' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='72' fill='%23e8c547' text-anchor='middle'>MTC</text></svg>">
-
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='20' fill='%230a0a0a'/><text x='96' y='125' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='72' fill='%23e8c547' text-anchor='middle'>MTC</text></svg>">
-
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;MTC TRANSPORT&quot;,&quot;short_name&quot;:&quot;MTC - gestiune haine&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%230a0a0a&quot;,&quot;theme_color&quot;:&quot;%230a0a0a&quot;}">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='20' fill='%230a0a0a'/><text x='96' y='125' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='72' fill='%23e8c547' text-anchor='middle'>MTC</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='20' fill='%230a0a0a'/><text x='96' y='125' font-family='Arial Black,Arial,sans-serif' font-weight='900' font-size='72' fill='%23e8c547' text-anchor='middle'>MTC</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0a0a0a;
-  --surface: #141414;
-  --surface2: #1e1e1e;
-  --border: #2a2a2a;
-  --accent: #e8c547;
-  --accent2: #c9a92e;
-  --red: #e84747;
-  --green: #47c97a;
-  --text: #f0f0f0;
-  --muted: #666;
-  --font-display: 'Bebas Neue', sans-serif;
-  --font-body: 'DM Sans', sans-serif;
-  --font-mono: 'DM Mono', monospace;
+  --bg:#0a0a0a; --surface:#141414; --surface2:#1e1e1e; --border:#2a2a2a;
+  --accent:#e8c547; --accent2:#c9a92e; --red:#e84747; --green:#47c97a;
+  --text:#f0f0f0; --muted:#666;
+  --font-display:'Bebas Neue',sans-serif;
+  --font-body:'DM Sans',sans-serif;
+  --font-mono:'DM Mono',monospace;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-body);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;overflow-x:hidden;}
 
-/* ===== AUTH SCREEN ===== */
-#auth-screen {
-  display: flex; align-items: center; justify-content: center;
-  min-height: 100vh;
-  background: radial-gradient(ellipse at 30% 50%, #1a1500 0%, #0a0a0a 70%);
-}
-.auth-box {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-top: 3px solid var(--accent);
-  padding: 48px 40px;
-  width: 100%; max-width: 420px;
-  border-radius: 4px;
-}
-.auth-logo {
-  font-family: var(--font-display);
-  font-size: 52px;
-  letter-spacing: 6px;
-  color: var(--accent);
-  margin-bottom: 4px;
-}
-.auth-subtitle {
-  font-size: 11px;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 36px;
-}
-.auth-field { margin-bottom: 16px; }
-.auth-field label {
-  display: block;
-  font-size: 10px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 8px;
-}
-.auth-field input {
-  width: 100%;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 12px 14px;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 14px;
-  transition: border-color 0.2s;
-}
-.auth-field input:focus { outline: none; border-color: var(--accent); }
-.auth-select {
-  width: 100%;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 13px 14px;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 15px;
-  transition: border-color 0.2s;
-  appearance: none;
-  cursor: pointer;
-}
-.auth-select:focus { outline: none; border-color: var(--accent); }
-.auth-select option { background: var(--surface2); }
-.auth-switch {
-  text-align: center;
-  margin-top: 16px;
-  font-size: 12px;
-  color: var(--muted);
-  cursor: pointer;
-  transition: color 0.2s;
-  letter-spacing: 0.5px;
-}
-.auth-switch:hover { color: var(--accent); }
-.btn-operator {
-  width: 100%;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 16px;
-  font-family: var(--font-display);
-  font-size: 22px;
-  letter-spacing: 3px;
-  cursor: pointer;
-  border-radius: 3px;
-  transition: all 0.15s;
-  text-align: center;
-}
-.btn-operator:hover { border-color: var(--accent); color: var(--accent); background: #1a1500; }
-.btn-operator:active { transform: scale(0.98); }
-.btn-primary {
-  width: 100%;
-  background: var(--accent);
-  color: #000;
-  border: none;
-  padding: 14px;
-  font-family: var(--font-display);
-  font-size: 18px;
-  letter-spacing: 3px;
-  cursor: pointer;
-  border-radius: 3px;
-  margin-top: 8px;
-  transition: background 0.2s, transform 0.1s;
-}
-.btn-primary:hover { background: var(--accent2); }
-.btn-primary:active { transform: scale(0.98); }
-.auth-error {
-  color: var(--red);
-  font-size: 12px;
-  margin-top: 12px;
-  text-align: center;
-  min-height: 16px;
-}
+/* AUTH */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at 30% 50%,#1a1500 0%,#0a0a0a 70%);}
+.auth-box{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--accent);padding:48px 40px;width:100%;max-width:420px;border-radius:4px;}
+.auth-logo{font-family:var(--font-display);font-size:36px;letter-spacing:3px;color:var(--accent);margin-bottom:4px;}
+.auth-subtitle{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:28px;}
+.auth-field{margin-bottom:16px;}
+.auth-field label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.auth-field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:12px 14px;color:var(--text);font-family:var(--font-body);font-size:14px;transition:border-color 0.2s;}
+.auth-field input:focus{outline:none;border-color:var(--accent);}
+.btn-primary{width:100%;background:var(--accent);color:#000;border:none;padding:14px;font-family:var(--font-display);font-size:18px;letter-spacing:3px;cursor:pointer;border-radius:3px;margin-top:8px;transition:background 0.2s;}
+.btn-primary:hover{background:var(--accent2);}
+.auth-error{color:var(--red);font-size:12px;margin-top:12px;text-align:center;min-height:16px;}
+.auth-switch{text-align:center;margin-top:16px;font-size:12px;color:var(--muted);cursor:pointer;transition:color 0.2s;letter-spacing:0.5px;}
+.auth-switch:hover{color:var(--accent);}
+.btn-operator{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:16px;font-family:var(--font-display);font-size:22px;letter-spacing:3px;cursor:pointer;border-radius:3px;transition:all 0.15s;text-align:center;}
+.btn-operator:hover{border-color:var(--accent);color:var(--accent);background:#1a1500;}
+.btn-operator:active{transform:scale(0.98);}
 
-/* ===== MAIN APP ===== */
-#app { display: none; }
-header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 0 24px;
-  display: flex; align-items: center; justify-content: space-between;
-  height: 56px;
-  position: sticky; top: 0; z-index: 100;
-}
-.logo {
-  font-family: var(--font-display);
-  font-size: 28px;
-  letter-spacing: 5px;
-  color: var(--accent);
-}
-.header-right { display: flex; align-items: center; gap: 16px; }
-.user-badge {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 12px;
-  display: flex; align-items: center; gap: 8px;
-}
-.user-role {
-  background: var(--accent);
-  color: #000;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  padding: 2px 6px;
-  border-radius: 10px;
-  text-transform: uppercase;
-}
-.user-role.viewer { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
-.btn-logout {
-  background: none; border: 1px solid var(--border);
-  color: var(--muted); padding: 6px 14px;
-  border-radius: 3px; cursor: pointer; font-size: 12px;
-  transition: all 0.2s;
-}
-.btn-logout:hover { border-color: var(--red); color: var(--red); }
+/* HEADER */
+#app{display:none;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;}
+.logo{font-family:var(--font-display);font-size:20px;letter-spacing:3px;color:var(--accent);}
+.header-right{display:flex;align-items:center;gap:16px;}
+.user-badge{background:var(--surface2);border:1px solid var(--border);padding:6px 14px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:8px;}
+.user-role{background:var(--accent);color:#000;font-size:9px;font-weight:600;letter-spacing:1px;padding:2px 6px;border-radius:10px;text-transform:uppercase;}
+.user-role.viewer{background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
+.btn-logout{background:none;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:3px;cursor:pointer;font-size:12px;transition:all 0.2s;}
+.btn-logout:hover{border-color:var(--red);color:var(--red);}
 
-/* ===== NAV TABS ===== */
-.nav-tabs {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  display: flex; gap: 0;
-  padding: 0 24px;
-  overflow-x: auto;
-}
-.nav-tab {
-  padding: 14px 20px;
-  font-size: 11px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--muted);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-  white-space: nowrap;
-  user-select: none;
-}
-.nav-tab:hover { color: var(--text); }
-.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+/* NAV */
+.nav-tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 24px;overflow-x:auto;}
+.nav-tab{padding:14px 20px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap;user-select:none;}
+.nav-tab:hover{color:var(--text);}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.admin-only{display:none !important;}
 
-/* ===== MAIN CONTENT ===== */
-.content { padding: 24px; max-width: 1400px; margin: 0 auto; }
-.section { display: none; }
-.section.active { display: block; }
+/* CONTENT */
+.content{padding:24px;max-width:1400px;margin:0 auto;}
+.section{display:none;}
+.section.active{display:block;}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.section-title{font-family:var(--font-display);font-size:32px;letter-spacing:3px;}
 
-/* ===== STOC TABLE ===== */
-.section-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 20px; flex-wrap: gap;
-}
-.section-title {
-  font-family: var(--font-display);
-  font-size: 32px;
-  letter-spacing: 3px;
-}
-.btn-action {
-  background: var(--accent);
-  color: #000;
-  border: none;
-  padding: 10px 20px;
-  font-family: var(--font-display);
-  font-size: 16px;
-  letter-spacing: 2px;
-  cursor: pointer;
-  border-radius: 3px;
-  transition: background 0.2s;
-}
-.btn-action:hover { background: var(--accent2); }
-.btn-danger {
-  background: var(--red);
-  color: #fff;
-  border: none;
-  padding: 6px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  border-radius: 3px;
-}
-.btn-secondary {
-  background: var(--surface2);
-  color: var(--text);
-  border: 1px solid var(--border);
-  padding: 10px 20px;
-  font-size: 13px;
-  cursor: pointer;
-  border-radius: 3px;
-  transition: all 0.2s;
-}
-.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+/* BUTTONS */
+.btn-action{background:var(--accent);color:#000;border:none;padding:10px 20px;font-family:var(--font-display);font-size:16px;letter-spacing:2px;cursor:pointer;border-radius:3px;transition:background 0.2s;}
+.btn-action:hover{background:var(--accent2);}
+.btn-danger{background:var(--red);color:#fff;border:none;padding:6px 12px;font-size:12px;cursor:pointer;border-radius:3px;}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:10px 20px;font-size:13px;cursor:pointer;border-radius:3px;transition:all 0.2s;}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
 
-.stoc-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-}
-.stoc-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-  transition: border-color 0.2s;
-}
-.stoc-card:hover { border-color: var(--accent); }
-.stoc-card-header {
-  background: var(--surface2);
-  padding: 12px 16px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-.stoc-card-name {
-  font-family: var(--font-display);
-  font-size: 20px;
-  letter-spacing: 2px;
-}
-.stoc-sizes {
-  padding: 12px 16px;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-}
-.size-cell {
-  text-align: center;
-}
-.size-label {
-  font-size: 9px;
-  letter-spacing: 1px;
-  color: var(--muted);
-  text-transform: uppercase;
-  margin-bottom: 3px;
-}
-.size-qty {
-  font-family: var(--font-mono);
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--text);
-}
-.size-qty.low { color: var(--red); }
-.size-qty.ok { color: var(--green); }
-.size-qty.zero { color: var(--muted); }
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:16px 20px;}
+.stat-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.stat-value{font-family:var(--font-display);font-size:36px;color:var(--accent);}
 
-/* ===== TABLE ===== */
-.table-wrap { overflow-x: auto; border-radius: 4px; border: 1px solid var(--border); }
-table { width: 100%; border-collapse: collapse; background: var(--surface); }
-thead { background: var(--surface2); }
-th {
-  padding: 12px 16px;
-  text-align: left;
-  font-size: 9px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--muted);
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-}
-td {
-  padding: 12px 16px;
-  font-size: 13px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: middle;
-}
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: var(--surface2); }
-.badge-size {
-  display: inline-block;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  padding: 2px 8px;
-  border-radius: 3px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-}
+/* STOC GRID */
+.stoc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+.stoc-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:border-color 0.2s;}
+.stoc-card:hover{border-color:var(--accent);}
+.stoc-card-header{background:var(--surface2);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.stoc-card-name{font-family:var(--font-display);font-size:20px;letter-spacing:2px;}
+.stoc-sizes{padding:12px 16px;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+.size-cell{text-align:center;}
+.size-label{font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:3px;}
+.size-qty{font-family:var(--font-mono);font-size:18px;font-weight:500;}
+.size-qty.low{color:var(--red);}
+.size-qty.ok{color:var(--green);}
+.size-qty.zero{color:var(--muted);}
 
-/* ===== MODAL ===== */
-.modal-overlay {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.85);
-  z-index: 1000;
-  align-items: center; justify-content: center;
-  padding: 20px;
-}
-.modal-overlay.open { display: flex; }
-.modal {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-top: 3px solid var(--accent);
-  border-radius: 4px;
-  width: 100%; max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-.modal-header {
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-}
-.modal-title {
-  font-family: var(--font-display);
-  font-size: 24px;
-  letter-spacing: 2px;
-}
-.modal-close {
-  background: none; border: none;
-  color: var(--muted); cursor: pointer;
-  font-size: 20px; padding: 4px;
-  transition: color 0.2s;
-}
-.modal-close:hover { color: var(--red); }
-.modal-body { padding: 24px; }
-.form-field { margin-bottom: 18px; }
-.form-label {
-  display: block;
-  font-size: 10px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 8px;
-}
-.form-input, .form-select {
-  width: 100%;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 11px 14px;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 14px;
-  transition: border-color 0.2s;
-  appearance: none;
-}
-.form-input:focus, .form-select:focus { outline: none; border-color: var(--accent); }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.modal-footer {
-  padding: 16px 24px 20px;
-  border-top: 1px solid var(--border);
-  display: flex; gap: 10px; justify-content: flex-end;
-}
+/* TABLE */
+.table-wrap{overflow-x:auto;border-radius:4px;border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;background:var(--surface);}
+thead{background:var(--surface2);}
+th{padding:12px 16px;text-align:left;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:12px 16px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+.badge-size{display:inline-block;background:var(--surface2);border:1px solid var(--border);padding:2px 8px;border-radius:3px;font-family:var(--font-mono);font-size:11px;}
+.qty-tag{display:inline-block;background:var(--surface2);border:1px solid var(--border);padding:2px 8px;border-radius:3px;font-family:var(--font-mono);font-size:12px;}
 
-/* ===== DISTRIBUIRE SECTION ===== */
-.distribute-wrap {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-@media (max-width: 768px) {
-  .distribute-wrap { grid-template-columns: 1fr; }
-}
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 24px;
-}
-.card-title {
-  font-family: var(--font-display);
-  font-size: 22px;
-  letter-spacing: 2px;
-  margin-bottom: 20px;
-}
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:24px;}
+.card-title{font-family:var(--font-display);font-size:22px;letter-spacing:2px;margin-bottom:20px;}
 
-/* ===== TOAST ===== */
-#toast {
-  position: fixed; bottom: 24px; right: 24px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--green);
-  padding: 14px 20px;
-  border-radius: 4px;
-  font-size: 13px;
-  max-width: 300px;
-  z-index: 9999;
-  transform: translateX(120%);
-  transition: transform 0.3s ease;
-  pointer-events: none;
-}
-#toast.show { transform: translateX(0); }
-#toast.error { border-left-color: var(--red); }
+/* DISTRIBUIRE */
+.distribute-wrap{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media(max-width:768px){.distribute-wrap{grid-template-columns:1fr;}}
 
-/* ===== ANGAJATI ===== */
-.angajat-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
-}
-.angajat-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 16px;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 10px;
-}
-.angajat-name { font-size: 13px; font-weight: 500; }
-.angajat-dept { font-size: 11px; color: var(--muted); margin-top: 2px; }
+/* ANGAJATI */
+.angajat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.angajat-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.angajat-name{font-size:13px;font-weight:500;}
+.angajat-dept{font-size:11px;color:var(--muted);margin-top:2px;}
 
-/* Stats */
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
-  margin-bottom: 24px;
-}
-.stat-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 16px 20px;
-}
-.stat-label {
-  font-size: 9px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-.stat-value {
-  font-family: var(--font-display);
-  font-size: 36px;
-  color: var(--accent);
-}
+/* SEARCH */
+.search-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.search-input{flex:1;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:10px 14px;color:var(--text);font-family:var(--font-body);font-size:13px;}
+.search-input:focus{outline:none;border-color:var(--accent);}
 
-/* Search */
-.search-bar {
-  display: flex; gap: 10px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-.search-input {
-  flex: 1; min-width: 200px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 10px 14px;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 13px;
-}
-.search-input:focus { outline: none; border-color: var(--accent); }
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--accent);border-radius:4px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;}
+.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-family:var(--font-display);font-size:24px;letter-spacing:2px;}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;padding:4px;transition:color 0.2s;}
+.modal-close:hover{color:var(--red);}
+.modal-body{padding:24px;}
+.modal-footer{padding:16px 24px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
+.form-field{margin-bottom:18px;}
+.form-label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.form-input,.form-select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:11px 14px;color:var(--text);font-family:var(--font-body);font-size:14px;transition:border-color 0.2s;appearance:none;}
+.form-input:focus,.form-select:focus{outline:none;border-color:var(--accent);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 
-/* Responsive */
-@media (max-width: 600px) {
-  .content { padding: 12px; }
-  .stoc-grid { grid-template-columns: 1fr; }
-  .section-header { flex-direction: column; align-items: flex-start; gap: 12px; }
-  header { padding: 0 12px; }
-  .logo { font-size: 22px; }
-}
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--green);padding:14px 20px;border-radius:4px;font-size:13px;max-width:300px;z-index:9999;transform:translateX(120%);transition:transform 0.3s ease;pointer-events:none;}
+#toast.show{transform:translateX(0);}
+#toast.error{border-left-color:var(--red);}
 
-/* Loading */
-.loading {
-  text-align: center; padding: 60px;
-  color: var(--muted); font-size: 13px;
-  letter-spacing: 2px; text-transform: uppercase;
-}
+/* LOADING */
+.loading{text-align:center;padding:60px;color:var(--muted);font-size:13px;letter-spacing:2px;text-transform:uppercase;}
+.dot-pulse::after{content:'';animation:dots 1.5s infinite;}
+@keyframes dots{0%{content:'';}33%{content:'.';}66%{content:'..';}100%{content:'...'}}
 
-.dot-pulse::after {
-  content: '';
-  animation: dots 1.5s infinite;
-}
-@keyframes dots {
-  0% { content: ''; }
-  33% { content: '.'; }
-  66% { content: '..'; }
-  100% { content: '...'; }
-}
-
-/* Admin-only elements — ascunse implicit */
-.admin-only { display: none !important; }
-.admin-only.visible { display: '' !important; }
-
-/* Qty badge */
-.qty-tag {
-  display: inline-block;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  padding: 2px 8px;
-  border-radius: 3px;
-  font-family: var(--font-mono);
-  font-size: 12px;
+/* RESPONSIVE */
+@media(max-width:600px){
+  .content{padding:12px;}
+  .stoc-grid{grid-template-columns:1fr;}
+  .section-header{flex-direction:column;align-items:flex-start;}
+  header{padding:0 12px;}
 }
 </style>
 </head>
 <body>
 <script>
-// Versiune aplicatie — schimba acest numar la fiecare deploy nou pe GitHub
-const APP_VERSION = '1.0';
-const savedVersion = localStorage.getItem('mtc_app_version');
-if (savedVersion && savedVersion !== APP_VERSION) {
-  localStorage.setItem('mtc_app_version', APP_VERSION);
-  window.location.reload(true);
-} else {
-  localStorage.setItem('mtc_app_version', APP_VERSION);
-}
+const APP_VERSION = '2.0';
+const sv = localStorage.getItem('mtc_app_version');
+if (sv && sv !== APP_VERSION) { localStorage.setItem('mtc_app_version', APP_VERSION); window.location.reload(true); }
+else { localStorage.setItem('mtc_app_version', APP_VERSION); }
 </script>
 
 <!-- AUTH -->
 <div id="auth-screen">
   <div class="auth-box">
-    <div class="auth-logo" style="font-size:36px;letter-spacing:3px;">MTC TRANSPORT</div>
+    <div class="auth-logo">MTC TRANSPORT</div>
     <div class="auth-subtitle">Gestiune stoc haine</div>
 
-    <!-- OPERATOR LOGIN (default) -->
     <div id="operator-login">
       <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;">Selectează utilizatorul</p>
       <div style="display:flex;flex-direction:column;gap:10px;">
@@ -607,7 +187,6 @@ if (savedVersion && savedVersion !== APP_VERSION) {
       <div class="auth-switch" onclick="toggleAdminLogin()">🔐 Sunt administratorul</div>
     </div>
 
-    <!-- ADMIN LOGIN (hidden by default) -->
     <div id="admin-login" style="display:none;">
       <div class="auth-field">
         <label>Email Admin</label>
@@ -618,9 +197,8 @@ if (savedVersion && savedVersion !== APP_VERSION) {
         <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
       </div>
       <button class="btn-primary" onclick="doAdminLogin()">INTRĂ CA ADMIN</button>
-      <div class="auth-switch" onclick="toggleAdminLogin()">← Înapoi la selecție operator</div>
+      <div class="auth-switch" onclick="toggleAdminLogin()">← Înapoi</div>
     </div>
-
     <div class="auth-error" id="auth-error"></div>
   </div>
 </div>
@@ -628,10 +206,10 @@ if (savedVersion && savedVersion !== APP_VERSION) {
 <!-- APP -->
 <div id="app">
   <header>
-    <div class="logo" style="font-size:20px;letter-spacing:3px;">MTC TRANSPORT <span style="font-size:13px;color:var(--muted);letter-spacing:1px;font-family:var(--font-body);">Gestiune stoc haine</span></div>
+    <div class="logo">MTC TRANSPORT <span style="font-size:13px;color:var(--muted);letter-spacing:1px;font-family:var(--font-body);">Gestiune stoc haine</span></div>
     <div class="header-right">
       <div class="user-badge">
-        <span id="conn-dot" style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:2px;" title="Conectat"></span>
+        <span id="conn-dot" style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:2px;"></span>
         <span id="header-username">—</span>
         <span class="user-role" id="header-role">—</span>
       </div>
@@ -640,13 +218,13 @@ if (savedVersion && savedVersion !== APP_VERSION) {
   </header>
 
   <div class="nav-tabs">
-    <div class="nav-tab active" onclick="showSection('stoc', this)">📦 Stoc</div>
-    <div class="nav-tab" onclick="showSection('distribuire', this)">🎁 Distribuire</div>
-    <div class="nav-tab" onclick="showSection('istoric', this)">📋 Istoric</div>
-    <div class="nav-tab admin-only" onclick="showSection('angajati', this)">👥 Angajați</div>
-    <div class="nav-tab admin-only" onclick="showSection('adaugari', this)">📥 Adăugări Stoc</div>
-    <div class="nav-tab admin-only" onclick="showSection('raport', this)">📊 Raport Persoane</div>
-    <div class="nav-tab admin-only" onclick="showSection('admin', this)">⚙️ Admin</div>
+    <div class="nav-tab active" onclick="showSection('stoc',this)">📦 Stoc</div>
+    <div class="nav-tab" onclick="showSection('distribuire',this)">🎁 Distribuire</div>
+    <div class="nav-tab" onclick="showSection('istoric',this)">📋 Istoric</div>
+    <div class="nav-tab admin-only" onclick="showSection('angajati',this)">👥 Angajați</div>
+    <div class="nav-tab admin-only" onclick="showSection('adaugari',this)">📥 Adăugări Stoc</div>
+    <div class="nav-tab admin-only" onclick="showSection('raport',this)">📊 Raport Persoane</div>
+    <div class="nav-tab admin-only" onclick="showSection('admin',this)">⚙️ Admin</div>
   </div>
 
   <div class="content">
@@ -657,7 +235,7 @@ if (savedVersion && savedVersion !== APP_VERSION) {
         <div class="section-title">STOC CURENT</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button class="btn-action admin-only" onclick="openModal('modal-add-stoc')">+ ADAUGĂ STOC</button>
-          <button class="btn-secondary admin-only" onclick="openModal('modal-corecteaza-stoc')" style="border-color:var(--red);color:var(--red);">✏ CORECTEAZĂ STOC</button>
+          <button class="btn-secondary admin-only" onclick="openModal('modal-corecteaza-stoc')" style="border-color:var(--red);color:var(--red);">✏ CORECTEAZĂ</button>
           <button class="btn-action admin-only" onclick="openModal('modal-add-haina')">+ ARTICOL NOU</button>
         </div>
       </div>
@@ -673,22 +251,16 @@ if (savedVersion && savedVersion !== APP_VERSION) {
           <div class="card-title">OFERĂ HAINE</div>
           <div class="form-field">
             <label class="form-label">Angajat</label>
-            <select class="form-select" id="dist-angajat">
-              <option value="">— Selectează angajat —</option>
-            </select>
+            <select class="form-select" id="dist-angajat"><option value="">— Selectează angajat —</option></select>
           </div>
           <div class="form-row">
             <div class="form-field">
               <label class="form-label">Articol</label>
-              <select class="form-select" id="dist-haina" onchange="updateSizeOptions()">
-                <option value="">— Articol —</option>
-              </select>
+              <select class="form-select" id="dist-haina" onchange="updateSizeOptions()"><option value="">— Articol —</option></select>
             </div>
             <div class="form-field" id="dist-marime-row">
               <label class="form-label">Mărime</label>
-              <select class="form-select" id="dist-marime">
-                <option value="">— Mărime —</option>
-              </select>
+              <select class="form-select" id="dist-marime"><option value="">— Mărime —</option></select>
             </div>
           </div>
           <div class="form-field">
@@ -712,16 +284,12 @@ if (savedVersion && savedVersion !== APP_VERSION) {
         <button class="btn-secondary" onclick="exportCSV()">⬇ Export CSV</button>
       </div>
       <div class="search-bar">
-        <input class="search-input" type="text" id="search-istoric" placeholder="Caută după nume, articol..." oninput="filterIstoric()">
-        <select class="form-select" style="width:auto;" id="filter-haina" onchange="filterIstoric()">
-          <option value="">Toate articolele</option>
-        </select>
+        <input class="search-input" type="text" id="search-istoric" placeholder="Caută după nume, articol, operator..." oninput="filterIstoric()">
+        <select class="form-select" style="width:auto;" id="filter-haina" onchange="filterIstoric()"><option value="">Toate articolele</option></select>
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr>
-            <th>Data</th><th>Ora</th><th>Angajat</th><th>Articol</th><th>Mărime</th><th>Cant.</th><th>Operator</th>
-          </tr></thead>
+          <thead><tr><th>Data</th><th>Ora</th><th>Angajat</th><th>Articol</th><th>Mărime</th><th>Cant.</th><th>Operator</th></tr></thead>
           <tbody id="istoric-tbody"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px;">Se încarcă...</td></tr></tbody>
         </table>
       </div>
@@ -734,7 +302,7 @@ if (savedVersion && savedVersion !== APP_VERSION) {
         <button class="btn-action" onclick="openModal('modal-add-angajat')">+ ANGAJAT NOU</button>
       </div>
       <div class="search-bar">
-        <input class="search-input" type="text" id="search-angajati" placeholder="Caută angajat..." oninput="filterAngajati()">
+        <input class="search-input" type="text" id="search-angajati" placeholder="Caută angajat..." oninput="renderAngajati()">
       </div>
       <div id="angajati-grid" class="angajat-grid"><div class="loading">Se încarcă<span class="dot-pulse"></span></div></div>
     </div>
@@ -746,8 +314,8 @@ if (savedVersion && savedVersion !== APP_VERSION) {
         <button class="btn-secondary" onclick="exportCSVAdaugari()">⬇ Export CSV</button>
       </div>
       <div class="search-bar">
-        <input class="search-input" type="text" id="search-adaugari" placeholder="Caută după articol, observații..." oninput="filterAdaugari()">
-        <select class="form-select" style="width:auto;" id="filter-tip-adaugare" onchange="filterAdaugari()">
+        <input class="search-input" type="text" id="search-adaugari" placeholder="Caută după articol, observații..." oninput="renderAdaugari()">
+        <select class="form-select" style="width:auto;" id="filter-tip-adaugare" onchange="renderAdaugari()">
           <option value="">Toate</option>
           <option value="corectie">Doar corecții</option>
           <option value="adaugare">Doar adăugări</option>
@@ -755,9 +323,7 @@ if (savedVersion && savedVersion !== APP_VERSION) {
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr>
-            <th>Data</th><th>Ora</th><th>Articol</th><th>Mărime</th><th>Cantitate</th><th>Observații</th>
-          </tr></thead>
+          <thead><tr><th>Data</th><th>Ora</th><th>Articol</th><th>Mărime</th><th>Cantitate</th><th>Observații</th></tr></thead>
           <tbody id="adaugari-tbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;">Se încarcă...</td></tr></tbody>
         </table>
       </div>
@@ -768,9 +334,7 @@ if (savedVersion && savedVersion !== APP_VERSION) {
       <div class="section-header">
         <div class="section-title">RAPORT PERSOANE</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <select class="form-select" style="width:auto;" id="raport-filter-angajat" onchange="renderRaport()">
-            <option value="">Toți angajații</option>
-          </select>
+          <select class="form-select" style="width:auto;" id="raport-filter-angajat" onchange="renderRaport()"><option value="">Toți angajații</option></select>
           <button class="btn-secondary" onclick="exportCSVRaport()">⬇ Export CSV</button>
         </div>
       </div>
@@ -781,147 +345,90 @@ if (savedVersion && savedVersion !== APP_VERSION) {
     <div class="section admin-only" id="section-admin">
       <div class="section-title" style="margin-bottom:20px;">ADMINISTRARE</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;">
-          <div class="card">
+
+        <div class="card">
           <div class="card-title" style="font-size:18px;">GESTIONARE OPERATORI</div>
           <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Deconectează un operator de pe telefonul lui</p>
-          <div id="operators-admin-list">
+          <div>
             <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
-              <div><div style="font-size:13px;font-weight:600;">Cristi</div><div id="op-status-operator1" style="font-size:11px;color:var(--muted);">Verificare...</div></div>
+              <div><div style="font-size:13px;font-weight:600;">Cristi</div><div id="op-status-operator1" style="font-size:11px;color:var(--muted);">—</div></div>
               <button class="btn-danger" onclick="forceLogoutOperator('operator1','Cristi')">Deconectează</button>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
-              <div><div style="font-size:13px;font-weight:600;">Mihaela</div><div id="op-status-operator2" style="font-size:11px;color:var(--muted);">Verificare...</div></div>
+              <div><div style="font-size:13px;font-weight:600;">Mihaela</div><div id="op-status-operator2" style="font-size:11px;color:var(--muted);">—</div></div>
               <button class="btn-danger" onclick="forceLogoutOperator('operator2','Mihaela')">Deconectează</button>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
-              <div><div style="font-size:13px;font-weight:600;">Raluca</div><div id="op-status-operator3" style="font-size:11px;color:var(--muted);">Verificare...</div></div>
+              <div><div style="font-size:13px;font-weight:600;">Raluca</div><div id="op-status-operator3" style="font-size:11px;color:var(--muted);">—</div></div>
               <button class="btn-danger" onclick="forceLogoutOperator('operator3','Raluca')">Deconectează</button>
             </div>
           </div>
         </div>
-        <div class="card">
-          <div class="card-title" style="font-size:18px;">MĂRIMI DISPONIBILE</div>
-          <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Mărimi active în sistem</p>
-          <div id="marimi-list" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
-        </div>
+
         <div class="card">
           <div class="card-title" style="font-size:18px;">CURĂȚĂ ISTORIC</div>
-          <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Șterge definitiv înregistrările. Acțiunea nu poate fi anulată.</p>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Șterge definitiv. Nu poate fi anulat.</p>
           <div style="display:flex;flex-direction:column;gap:10px;">
-            <button class="btn-danger" style="width:100%;padding:12px;font-size:14px;" onclick="curatistoric('istoric')">🗑 Șterge tot istoricul distribuirilor</button>
-            <button class="btn-danger" style="width:100%;padding:12px;font-size:14px;" onclick="curatistoric('adaugari')">🗑 Șterge tot istoricul adăugărilor</button>
-            <button class="btn-danger" style="width:100%;padding:12px;font-size:14px;background:#5a0000;" onclick="curatistoric('tot')">🗑 Șterge TOT (distribuiri + adăugări)</button>
+            <button class="btn-danger" style="width:100%;padding:12px;font-size:14px;" onclick="curatistoric('istoric')">🗑 Șterge istoricul distribuirilor</button>
+            <button class="btn-danger" style="width:100%;padding:12px;font-size:14px;" onclick="curatistoric('adaugari')">🗑 Șterge istoricul adăugărilor</button>
+            <button class="btn-danger" style="width:100%;padding:12px;font-size:14px;background:#5a0000;" onclick="curatistoric('tot')">🗑 Șterge TOT</button>
           </div>
         </div>
-          <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Importă hainele și angajații din Excel în Firebase.</p>
-          <p style="font-size:11px;color:var(--red);margin-bottom:16px;">⚠️ Apasă o singură dată! Verifică mai întâi că stocul e gol.</p>
-          <button class="btn-action" style="width:100%;font-size:20px;padding:16px;" onclick="seedData()">⬆ IMPORTĂ DATE DIN EXCEL</button>
+
+        <div class="card">
+          <div class="card-title" style="font-size:18px;">IMPORT DATE INIȚIALE</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Importă hainele și angajații din Excel.</p>
+          <p style="font-size:11px;color:var(--red);margin-bottom:16px;">⚠ Apasă o singură dată!</p>
+          <button class="btn-action" style="width:100%;font-size:18px;padding:14px;" onclick="seedData()">⬆ IMPORTĂ DATE DIN EXCEL</button>
         </div>
+
       </div>
     </div>
 
-  </div>
-</div>
+  </div><!-- /content -->
+</div><!-- /app -->
 
 <!-- MODALS -->
 
-<!-- Add Stoc Modal -->
+<!-- Add Stoc -->
 <div class="modal-overlay" id="modal-add-stoc">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">ADAUGĂ STOC</div>
-      <button class="modal-close" onclick="closeModal('modal-add-stoc')">✕</button>
-    </div>
+    <div class="modal-header"><div class="modal-title">ADAUGĂ STOC</div><button class="modal-close" onclick="closeModal('modal-add-stoc')">✕</button></div>
     <div class="modal-body">
-      <div class="form-field">
-        <label class="form-label">Articol</label>
-        <select class="form-select" id="stoc-haina" onchange="updateStocModalMarime()">
-          <option value="">— Selectează —</option>
-        </select>
+      <div class="form-field"><label class="form-label">Articol</label><select class="form-select" id="stoc-haina" onchange="updateStocModalMarime()"><option value="">— Selectează —</option></select></div>
+      <div id="stoc-marime-row" class="form-row">
+        <div class="form-field"><label class="form-label">Mărime</label><select class="form-select" id="stoc-marime"><option value="">— Mărime —</option></select></div>
+        <div class="form-field"><label class="form-label">Cantitate</label><input type="number" class="form-input" id="stoc-qty" value="1" min="1"></div>
       </div>
-      <div class="form-row" id="stoc-marime-row">
-        <div class="form-field">
-          <label class="form-label">Mărime</label>
-          <select class="form-select" id="stoc-marime">
-            <option value="">— Mărime —</option>
-            <option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option>
-          </select>
-        </div>
-        <div class="form-field">
-          <label class="form-label">Cantitate de adăugat</label>
-          <input type="number" class="form-input" id="stoc-qty" value="1" min="1">
-        </div>
-      </div>
-      <div class="form-field" id="stoc-qty-only" style="display:none;">
-        <label class="form-label">Cantitate de adăugat</label>
-        <input type="number" class="form-input" id="stoc-qty-fara" value="1" min="1">
-      </div>
-      <div class="form-field">
-        <label class="form-label">Observații (opțional)</label>
-        <input type="text" class="form-input" id="stoc-obs" placeholder="ex: comandă octombrie, furnizor X...">
-      </div>
+      <div class="form-field" id="stoc-qty-only" style="display:none;"><label class="form-label">Cantitate</label><input type="number" class="form-input" id="stoc-qty-fara" value="1" min="1"></div>
+      <div class="form-field"><label class="form-label">Observații (opțional)</label><input type="text" class="form-input" id="stoc-obs" placeholder="ex: comandă octombrie..."></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-secondary" onclick="closeModal('modal-add-stoc')">Anulează</button>
-      <button class="btn-action" onclick="adaugaStoc()">ADAUGĂ</button>
-    </div>
+    <div class="modal-footer"><button class="btn-secondary" onclick="closeModal('modal-add-stoc')">Anulează</button><button class="btn-action" onclick="adaugaStoc()">ADAUGĂ</button></div>
   </div>
 </div>
 
-<!-- Add Haina Modal -->
+<!-- Corecteaza Stoc -->
 <div class="modal-overlay" id="modal-corecteaza-stoc">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">CORECTEAZĂ STOC</div>
-      <button class="modal-close" onclick="closeModal('modal-corecteaza-stoc')">✕</button>
-    </div>
+    <div class="modal-header"><div class="modal-title">CORECTEAZĂ STOC</div><button class="modal-close" onclick="closeModal('modal-corecteaza-stoc')">✕</button></div>
     <div class="modal-body">
-      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Setează cantitatea exactă — folosește când stocul real diferă de cel din sistem.</p>
-      <div class="form-field">
-        <label class="form-label">Articol</label>
-        <select class="form-select" id="cor-haina" onchange="updateCorectareMarime()">
-          <option value="">— Selectează —</option>
-        </select>
-      </div>
-      <div class="form-field" id="cor-marime-row">
-        <label class="form-label">Mărime</label>
-        <select class="form-select" id="cor-marime" onchange="updateCorectareStocCurent()">
-          <option value="">— Mărime —</option>
-          <option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option>
-        </select>
-      </div>
-      <div class="form-field">
-        <label class="form-label">Stoc actual în sistem</label>
-        <div id="cor-stoc-curent" style="font-family:var(--font-mono);font-size:24px;color:var(--accent);padding:8px 0;">—</div>
-      </div>
-      <div class="form-field">
-        <label class="form-label">Cantitate corectă (număr real)</label>
-        <input type="number" class="form-input" id="cor-qty" min="0" placeholder="ex: 5">
-      </div>
-      <div class="form-field">
-        <label class="form-label">Motiv corecție</label>
-        <input type="text" class="form-input" id="cor-motiv" placeholder="ex: inventar, pierdere, eroare...">
-      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Setează cantitatea exactă reală.</p>
+      <div class="form-field"><label class="form-label">Articol</label><select class="form-select" id="cor-haina" onchange="updateCorectareMarime()"><option value="">— Selectează —</option></select></div>
+      <div class="form-field" id="cor-marime-row"><label class="form-label">Mărime</label><select class="form-select" id="cor-marime" onchange="updateCorectareStocCurent()"><option value="">— Mărime —</option></select></div>
+      <div class="form-field"><label class="form-label">Stoc actual în sistem</label><div id="cor-stoc-curent" style="font-family:var(--font-mono);font-size:24px;color:var(--accent);padding:8px 0;">—</div></div>
+      <div class="form-field"><label class="form-label">Cantitate corectă</label><input type="number" class="form-input" id="cor-qty" min="0" placeholder="ex: 5"></div>
+      <div class="form-field"><label class="form-label">Motiv</label><input type="text" class="form-input" id="cor-motiv" placeholder="ex: inventar, pierdere..."></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-secondary" onclick="closeModal('modal-corecteaza-stoc')">Anulează</button>
-      <button class="btn-action" style="background:var(--red);" onclick="corecteazaStoc()">SETEAZĂ CANTITATEA</button>
-    </div>
+    <div class="modal-footer"><button class="btn-secondary" onclick="closeModal('modal-corecteaza-stoc')">Anulează</button><button class="btn-action" style="background:var(--red);" onclick="corecteazaStoc()">SETEAZĂ</button></div>
   </div>
 </div>
 
-<!-- Add Haina Modal -->
+<!-- Add Haina -->
 <div class="modal-overlay" id="modal-add-haina">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">ARTICOL NOU</div>
-      <button class="modal-close" onclick="closeModal('modal-add-haina')">✕</button>
-    </div>
+    <div class="modal-header"><div class="modal-title">ARTICOL NOU</div><button class="modal-close" onclick="closeModal('modal-add-haina')">✕</button></div>
     <div class="modal-body">
-      <div class="form-field">
-        <label class="form-label">Denumire articol</label>
-        <input type="text" class="form-input" id="haina-name" placeholder="ex: PANTALONI 46-54, TRICOU POLO...">
-      </div>
+      <div class="form-field"><label class="form-label">Denumire articol</label><input type="text" class="form-input" id="haina-name" placeholder="ex: TRICOU, PANTALONI 46-54..."></div>
       <div class="form-field">
         <label class="form-label">Tip mărimi</label>
         <select class="form-select" id="haina-tip-marimi" onchange="updateHainaMarimiInput()">
@@ -933,98 +440,59 @@ if (savedVersion && savedVersion !== APP_VERSION) {
       <div class="form-field" id="haina-marimi-custom-row" style="display:none;">
         <label class="form-label">Mărimi (separate prin virgulă)</label>
         <input type="text" class="form-input" id="haina-marimi-custom" placeholder="ex: 46, 48, 50, 52, 54">
-        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Scrie mărimile separate prin virgulă. Stocul va fi 0 inițial.</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Scrie mărimile separate prin virgulă.</div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-secondary" onclick="closeModal('modal-add-haina')">Anulează</button>
-      <button class="btn-action" onclick="adaugaHaina()">CREEAZĂ</button>
-    </div>
+    <div class="modal-footer"><button class="btn-secondary" onclick="closeModal('modal-add-haina')">Anulează</button><button class="btn-action" onclick="adaugaHaina()">CREEAZĂ</button></div>
   </div>
 </div>
 
-<!-- Add Angajat Modal -->
+<!-- Add Angajat -->
 <div class="modal-overlay" id="modal-add-angajat">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">ANGAJAT NOU</div>
-      <button class="modal-close" onclick="closeModal('modal-add-angajat')">✕</button>
-    </div>
+    <div class="modal-header"><div class="modal-title">ANGAJAT NOU</div><button class="modal-close" onclick="closeModal('modal-add-angajat')">✕</button></div>
     <div class="modal-body">
-      <div class="form-field">
-        <label class="form-label">Nume Prenume</label>
-        <input type="text" class="form-input" id="ang-name" placeholder="ex: Popescu Ion">
-      </div>
-      <div class="form-field">
-        <label class="form-label">Departament (opțional)</label>
-        <input type="text" class="form-input" id="ang-dept" placeholder="ex: Depozit, Producție...">
-      </div>
+      <div class="form-field"><label class="form-label">Nume Prenume</label><input type="text" class="form-input" id="ang-name" placeholder="ex: Popescu Ion"></div>
+      <div class="form-field"><label class="form-label">Departament (opțional)</label><input type="text" class="form-input" id="ang-dept" placeholder="ex: Depozit..."></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-secondary" onclick="closeModal('modal-add-angajat')">Anulează</button>
-      <button class="btn-action" onclick="adaugaAngajat()">ADAUGĂ</button>
-    </div>
+    <div class="modal-footer"><button class="btn-secondary" onclick="closeModal('modal-add-angajat')">Anulează</button><button class="btn-action" onclick="adaugaAngajat()">ADAUGĂ</button></div>
   </div>
 </div>
 
-<!-- Edit Angajat Modal -->
+<!-- Edit Angajat -->
 <div class="modal-overlay" id="modal-edit-angajat">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">EDITEAZĂ ANGAJAT</div>
-      <button class="modal-close" onclick="closeModal('modal-edit-angajat')">✕</button>
-    </div>
+    <div class="modal-header"><div class="modal-title">EDITEAZĂ ANGAJAT</div><button class="modal-close" onclick="closeModal('modal-edit-angajat')">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="edit-ang-id">
-      <div class="form-field">
-        <label class="form-label">Nume Prenume</label>
-        <input type="text" class="form-input" id="edit-ang-name">
-      </div>
-      <div class="form-field">
-        <label class="form-label">Departament (opțional)</label>
-        <input type="text" class="form-input" id="edit-ang-dept" placeholder="ex: Depozit, Producție...">
-      </div>
+      <div class="form-field"><label class="form-label">Nume Prenume</label><input type="text" class="form-input" id="edit-ang-name"></div>
+      <div class="form-field"><label class="form-label">Departament (opțional)</label><input type="text" class="form-input" id="edit-ang-dept"></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-secondary" onclick="closeModal('modal-edit-angajat')">Anulează</button>
-      <button class="btn-action" onclick="salveazaAngajat()">SALVEAZĂ</button>
-    </div>
+    <div class="modal-footer"><button class="btn-secondary" onclick="closeModal('modal-edit-angajat')">Anulează</button><button class="btn-action" onclick="salveazaAngajat()">SALVEAZĂ</button></div>
   </div>
 </div>
 
-<!-- Modal Stoc Scazut -->
+<!-- Stoc Scazut Modal -->
 <div class="modal-overlay" id="modal-stoc-scazut">
   <div class="modal" style="max-width:560px;">
-    <div class="modal-header">
-      <div class="modal-title" style="color:var(--red);">⚠ STOC SCĂZUT</div>
-      <button class="modal-close" onclick="closeModal('modal-stoc-scazut')">✕</button>
-    </div>
+    <div class="modal-header"><div class="modal-title" style="color:var(--red);">⚠ STOC SCĂZUT</div><button class="modal-close" onclick="closeModal('modal-stoc-scazut')">✕</button></div>
     <div class="modal-body" style="padding:16px 24px;">
       <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Articole cu cantitate ≤ 7 bucăți</p>
       <div id="stoc-scazut-lista"></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-action" onclick="closeModal('modal-stoc-scazut')">ÎNCHIDE</button>
-    </div>
+    <div class="modal-footer"><button class="btn-action" onclick="closeModal('modal-stoc-scazut')">ÎNCHIDE</button></div>
   </div>
 </div>
 
 <div id="toast"></div>
 
-<!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import {
-  getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc,
-  updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, increment,
-  serverTimestamp, Timestamp, writeBatch, where, enableNetwork
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, increment, serverTimestamp, writeBatch, where, enableNetwork } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // =============================================
-// 🔥 CONFIGURARE FIREBASE
+// FIREBASE CONFIG
 // =============================================
 const firebaseConfig = {
   apiKey: "AIzaSyDidhCFWRqGM6i--qJwJz3_R5U9oT3k1to",
@@ -1039,51 +507,54 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Forțează reconectarea când revii pe tab/fereastră
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') enableNetwork(db).catch(() => {});
-});
-window.addEventListener('focus', () => enableNetwork(db).catch(() => {}));
-
-// Indicator conexiune
-function updateConnDot(online) {
-  const dot = document.getElementById('conn-dot');
-  if (!dot) return;
-  dot.style.background = online ? 'var(--green)' : 'var(--red)';
-  dot.title = online ? 'Conectat' : 'Fără conexiune';
-}
-window.addEventListener('online', () => { updateConnDot(true); enableNetwork(db).catch(() => {}); });
+// Reconectare la revenire pe tab
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') enableNetwork(db).catch(()=>{}); });
+window.addEventListener('focus', () => enableNetwork(db).catch(()=>{}));
+window.addEventListener('online', () => { updateConnDot(true); enableNetwork(db).catch(()=>{}); });
 window.addEventListener('offline', () => updateConnDot(false));
+
+function updateConnDot(online) {
+  const d = document.getElementById('conn-dot');
+  if (d) { d.style.background = online ? 'var(--green)' : 'var(--red)'; }
+}
 updateConnDot(navigator.onLine);
 
 // =============================================
 // STATE
 // =============================================
-let currentUser = null;
-let currentRole = null;
-let currentOperatorName = '';
-let stocData = {};
-let angajatiData = [];
-let istoricData = [];
-let unsubStoc = null;
-let unsubIstoric = null;
+let currentUser = null, currentRole = null, currentOperatorName = '';
+let stocData = {}, angajatiData = [], istoricData = [], adaugariData = [];
+let unsubStoc = null, unsubAngajati = null, unsubIstoric = null, unsubAdaugari = null;
+let appStarted = false;
 
 // =============================================
-// MĂRIMI STANDARD
+// CONSTANTE
 // =============================================
-const MARIMI = ['XS', 'S', 'M', 'L', 'XL'];
-
-// =============================================
-// CONFIG OPERATORI
-// =============================================
+const MARIMI = ['XS','S','M','L','XL'];
+const FARA_MARIMI = ['SAPCA','CACIULA'];
+const PRAG_SCAZUT = 7;
 const OPERATORI = {
   operator1: { displayName: 'Cristi' },
   operator2: { displayName: 'Mihaela' },
   operator3: { displayName: 'Raluca' },
 };
 
+// Helpers mărimi
+function estefaraMarimi(h) { return !h || FARA_MARIMI.includes(h.denumire) || h.tipMarimi === 'fara'; }
+function getMarimiArticol(h) {
+  if (estefaraMarimi(h)) return [];
+  if (h.tipMarimi === 'numeric' && h.marimiOrdine) return h.marimiOrdine;
+  if (h.marimi) {
+    const keys = Object.keys(h.marimi);
+    const allNum = keys.every(k => !isNaN(parseFloat(k)));
+    if (allNum) return keys.sort((a,b) => parseFloat(a)-parseFloat(b));
+    return MARIMI.filter(m => keys.includes(m));
+  }
+  return MARIMI;
+}
+
 // =============================================
-// AUTH TOGGLE — comută între operator și admin
+// AUTH
 // =============================================
 window.toggleAdminLogin = () => {
   const op = document.getElementById('operator-login');
@@ -1094,12 +565,6 @@ window.toggleAdminLogin = () => {
   adm.style.display = showingAdmin ? 'none' : 'block';
 };
 
-// =============================================
-// OPERATOR LOGIN — fără parolă
-// =============================================
-// =============================================
-// OPERATOR LOGIN — click direct, fără PIN
-// =============================================
 window.doOperatorLogin = (opId) => {
   const op = OPERATORI[opId];
   if (!op) return;
@@ -1110,139 +575,76 @@ window.doOperatorLogin = (opId) => {
   startApp();
 };
 
-// =============================================
-// ADMIN LOGIN — email + parolă Firebase
-// =============================================
 window.doAdminLogin = async () => {
   const email = document.getElementById('login-email').value.trim();
   const pass = document.getElementById('login-pass').value;
   document.getElementById('auth-error').textContent = '';
   if (!email || !pass) { document.getElementById('auth-error').textContent = 'Completează email și parola!'; return; }
-  try {
-    await signInWithEmailAndPassword(auth, email, pass);
-  } catch (e) {
-    document.getElementById('auth-error').textContent = 'Email sau parolă incorectă.';
-  }
+  try { await signInWithEmailAndPassword(auth, email, pass); }
+  catch { document.getElementById('auth-error').textContent = 'Email sau parolă incorectă.'; }
 };
+document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') window.doAdminLogin(); });
 
-document.getElementById('login-pass')?.addEventListener('keydown', e => {
-  if (e.key === 'Enter') window.doAdminLogin();
-});
-
-// =============================================
-// FIREBASE AUTH STATE — admin prin Firebase
-// =============================================
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUser = user;
-    // Oricine e logat prin Firebase Auth = admin
     currentRole = 'admin';
     currentOperatorName = 'Paul';
     startApp();
   } else {
-    // Verifică dacă e operator logat local (persistent)
-    const savedOp = localStorage.getItem('hermes_operator');
-    if (savedOp) {
+    const saved = localStorage.getItem('hermes_operator');
+    if (saved) {
       try {
-        const op = JSON.parse(savedOp);
+        const op = JSON.parse(saved);
         currentUser = { uid: op.id, email: op.id, isOperator: true };
         currentRole = 'operator';
         currentOperatorName = op.displayName;
         startApp();
         return;
-      } catch { sessionStorage.removeItem('hermes_operator'); }
+      } catch { localStorage.removeItem('hermes_operator'); }
     }
-    // Nimeni logat
-    currentUser = null; currentRole = null; currentOperatorName = '';
+    currentUser = null; currentRole = null; appStarted = false;
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
     if (unsubStoc) unsubStoc();
+    if (unsubAngajati) unsubAngajati();
     if (unsubIstoric) unsubIstoric();
+    if (unsubAdaugari) unsubAdaugari();
   }
 });
 
-// =============================================
-// LOGOUT
-// =============================================
 window.doLogout = async () => {
   appStarted = false;
   localStorage.removeItem('hermes_operator');
-  sessionStorage.removeItem('hermes_operator');
-  if (currentUser?.isOperator) {
-    window.location.reload();
-  } else {
-    await signOut(auth);
-    window.location.reload();
-  }
-};
-
-// Admin forțează deconectarea unui operator de pe telefonul lui
-// Salvează un flag în Firestore — operatorul verifică la fiecare focus
-window.forceLogoutOperator = async (opId, opName) => {
-  if (!confirm(`Deconectezi "${opName}" de pe telefonul lui?`)) return;
-  await setDoc(doc(db, 'force_logout', opId), {
-    logout: true, timestamp: serverTimestamp()
-  });
-  showToast(`"${opName}" va fi deconectat instant.`);
-};
-
-window.cancelForceLogout = async (opId, opName) => {
-  await deleteDoc(doc(db, 'force_logout', opId));
-  showToast(`Deconectare anulată pentru "${opName}".`);
+  if (currentUser?.isOperator) { window.location.reload(); }
+  else { await signOut(auth); window.location.reload(); }
 };
 
 // =============================================
-// START APP — comun admin + operator
+// START APP
 // =============================================
-let appStarted = false;
 function startApp() {
-  if (appStarted) return; // previne dubla inițializare
+  if (appStarted) return;
   appStarted = true;
-
   document.getElementById('header-username').textContent = currentOperatorName;
   document.getElementById('header-role').textContent = currentRole === 'admin' ? 'Admin' : 'Operator';
   document.getElementById('header-role').className = 'user-role' + (currentRole === 'admin' ? '' : ' viewer');
-
   if (currentRole === 'admin') {
-    // Admin — scoate clasa ca să apară elementele
-    document.querySelectorAll('.admin-only').forEach(el => {
-      el.classList.remove('admin-only');
-      el.classList.add('admin-was-hidden');
-    });
+    document.querySelectorAll('.admin-only').forEach(el => { el.classList.remove('admin-only'); });
   }
-  // Operatorii — elementele rămân cu admin-only (ascunse prin CSS)
-
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   initApp();
 }
 
-// =============================================
-// INIT APP
-// =============================================
 function initApp() {
   loadStocRealtime();
   loadAngajati();
   loadIstoric();
-  loadUsers();
   loadAdaugari();
-  setupDistribuireSelects();
-  renderMarimiAdmin();
-
-  // Operatorii verifică dacă au fost deconectați forțat de admin
+  loadUsers();
+  // Force logout listener pentru operatori
   if (currentRole === 'operator' && currentUser?.uid) {
-    const checkForceLogout = async () => {
-      try {
-        const snap = await getDoc(doc(db, 'force_logout', currentUser.uid));
-        if (snap.exists() && snap.data().logout === true) {
-          // Șterge documentul și deconectează
-          await deleteDoc(doc(db, 'force_logout', currentUser.uid));
-          localStorage.removeItem('hermes_operator');
-          window.location.reload();
-        }
-      } catch {}
-    };
-    // Ascultă în timp real cu onSnapshot — instant când admin apasă deconectează
     onSnapshot(doc(db, 'force_logout', currentUser.uid), (snap) => {
       if (snap.exists() && snap.data().logout === true) {
         deleteDoc(doc(db, 'force_logout', currentUser.uid)).then(() => {
@@ -1255,55 +657,30 @@ function initApp() {
 }
 
 // =============================================
-// STOC — REALTIME
+// STOC REALTIME
 // =============================================
 function loadStocRealtime() {
   if (unsubStoc) unsubStoc();
-  unsubStoc = onSnapshot(collection(db, 'stoc'), (snapshot) => {
+  unsubStoc = onSnapshot(collection(db, 'stoc'), snap => {
     stocData = {};
-    snapshot.forEach(doc => {
-      stocData[doc.id] = { id: doc.id, ...doc.data() };
-    });
+    snap.forEach(d => { stocData[d.id] = { id: d.id, ...d.data() }; });
     renderStoc();
     updateStocSelects();
     renderStats();
+  }, err => {
+    document.getElementById('stoc-grid').innerHTML =
+      `<div style="color:var(--red);padding:20px;font-size:13px;">⚠ Eroare: <b>${err.code}</b><br><span style="color:var(--muted);font-size:11px;">${err.message}</span></div>`;
   });
-}
-
-// Articole fără mărimi
-const PRAG_SCAZUT = 7;
-const FARA_MARIMI = ['SAPCA', 'CACIULA'];
-
-function estefaraMarimi(h) {
-  return estefaraMarimi(h) || h.tipMarimi === 'fara';
-}
-
-function getMarimiArticol(h) {
-  if (estefaraMarimi(h)) return [];
-  if (h.tipMarimi === 'numeric' && h.marimiOrdine) return h.marimiOrdine;
-  if (h.marimi) {
-    const keys = Object.keys(h.marimi);
-    // sortare numerică dacă sunt numere, altfel după MARIMI standard
-    const toateNumerice = keys.every(k => !isNaN(parseFloat(k)));
-    if (toateNumerice) return keys.sort((a,b) => parseFloat(a) - parseFloat(b));
-    return MARIMI.filter(m => keys.includes(m));
-  }
-  return MARIMI;
 }
 
 function renderStoc() {
   const grid = document.getElementById('stoc-grid');
-  const haine = Object.values(stocData).sort((a, b) => a.denumire.localeCompare(b.denumire));
-  if (haine.length === 0) {
-    grid.innerHTML = '<div class="loading">Niciun articol în stoc. Adaugă primul articol.</div>';
-    return;
-  }
+  const haine = Object.values(stocData).sort((a,b) => a.denumire.localeCompare(b.denumire));
+  if (!haine.length) { grid.innerHTML = '<div class="loading">Niciun articol. Adaugă primul articol.</div>'; return; }
   grid.innerHTML = haine.map(h => {
     const fara = estefaraMarimi(h);
     const numeEsc = h.denumire.replace(/'/g,"\\'");
-    const deleteBtn = currentRole === 'admin'
-      ? `<button class="btn-danger" onclick="stergeHaina('${h.id}','${numeEsc}')">✕</button>` : '';
-
+    const delBtn = currentRole === 'admin' ? `<button class="btn-danger" onclick="stergeHaina('${h.id}','${numeEsc}')">✕</button>` : '';
     let sizesHtml, total;
     if (fara) {
       total = h.cantitate || 0;
@@ -1311,123 +688,90 @@ function renderStoc() {
       sizesHtml = `<div style="padding:16px 20px;display:flex;align-items:center;gap:12px;">
         <div style="font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;">Cantitate</div>
         <div style="font-family:var(--font-mono);font-size:32px;font-weight:500;" class="size-qty ${cls}">${total}</div>
-        <div style="font-size:11px;color:var(--muted);">bucăți</div>
-      </div>`;
+        <div style="font-size:11px;color:var(--muted);">bucăți</div></div>`;
     } else {
-      const marimiList = getMarimiArticol(h);
-      const sizes = marimiList.map(m => {
-        const q = (h.marimi && h.marimi[m]) || 0;
-        const cls = q === 0 ? 'zero' : q <= PRAG_SCAZUT ? 'low' : 'ok';
-        return `<div class="size-cell">
-          <div class="size-label">${m}</div>
-          <div class="size-qty ${cls}">${q}</div>
-        </div>`;
-      }).join('');
-      total = marimiList.reduce((s, m) => s + ((h.marimi && h.marimi[m]) || 0), 0);
-      sizesHtml = `<div class="stoc-sizes" style="grid-template-columns:repeat(${Math.min(marimiList.length,6)},1fr)">${sizes}</div>`;
+      const ml = getMarimiArticol(h);
+      total = ml.reduce((s,m) => s+((h.marimi&&h.marimi[m])||0), 0);
+      const cols = Math.min(ml.length, 6);
+      sizesHtml = `<div class="stoc-sizes" style="grid-template-columns:repeat(${cols},1fr);">` +
+        ml.map(m => { const q=(h.marimi&&h.marimi[m])||0; const cls=q===0?'zero':q<=PRAG_SCAZUT?'low':'ok';
+          return `<div class="size-cell"><div class="size-label">${m}</div><div class="size-qty ${cls}">${q}</div></div>`; }).join('') + '</div>';
     }
-
     return `<div class="stoc-card">
       <div class="stoc-card-header">
         <div class="stoc-card-name">${h.denumire}</div>
         <div style="display:flex;align-items:center;gap:10px;">
-          ${!fara ? `<div style="font-family:var(--font-mono);font-size:13px;color:var(--muted);">TOTAL: ${total}</div>` : ''}
-          ${deleteBtn}
+          ${!fara?`<div style="font-family:var(--font-mono);font-size:13px;color:var(--muted);">TOTAL: ${total}</div>`:''}
+          ${delBtn}
         </div>
-      </div>
-      ${sizesHtml}
-    </div>`;
+      </div>${sizesHtml}</div>`;
   }).join('');
 }
 
 function renderStats() {
   const haine = Object.values(stocData);
   const totalArticole = haine.length;
-  const totalBucati = haine.reduce((s, h) => {
-    if (estefaraMarimi(h)) return s + (h.cantitate || 0);
-    const ml = getMarimiArticol(h); return s + ml.reduce((ss,m) => ss+((h.marimi&&h.marimi[m])||0),0);
-  }, 0);
-
-  // Numără combinații articol+mărime cu stoc ≤ 7
+  const totalBucati = haine.reduce((s,h) => {
+    if (estefaraMarimi(h)) return s+(h.cantitate||0);
+    return s+getMarimiArticol(h).reduce((ss,m)=>ss+((h.marimi&&h.marimi[m])||0),0);
+  },0);
   let nrScazut = 0;
   haine.forEach(h => {
-    if (estefaraMarimi(h)) {
-      if ((h.cantitate || 0) <= PRAG_SCAZUT) nrScazut++;
-    } else {
-      getMarimiArticol(h).forEach(m => {
-        if (((h.marimi && h.marimi[m]) || 0) <= PRAG_SCAZUT) nrScazut++;
-      });
-    }
+    if (estefaraMarimi(h)) { if ((h.cantitate||0)<=PRAG_SCAZUT) nrScazut++; }
+    else { getMarimiArticol(h).forEach(m => { if (((h.marimi&&h.marimi[m])||0)<=PRAG_SCAZUT) nrScazut++; }); }
   });
-
   document.getElementById('stats-row').innerHTML = `
     <div class="stat-card"><div class="stat-label">Tipuri Articole</div><div class="stat-value">${totalArticole}</div></div>
     <div class="stat-card"><div class="stat-label">Total Bucăți</div><div class="stat-value">${totalBucati}</div></div>
-    <div class="stat-card" onclick="showStocScazut()" style="cursor:pointer;border-color:var(--red);transition:all 0.2s;" onmouseover="this.style.background='#1a0a0a'" onmouseout="this.style.background=''">
-      <div class="stat-label" style="color:var(--red);">⚠ Stoc Scăzut ≤7 — Click</div>
+    <div class="stat-card" onclick="showStocScazut()" style="cursor:pointer;border-color:var(--red);" onmouseover="this.style.background='#1a0a0a'" onmouseout="this.style.background=''">
+      <div class="stat-label" style="color:var(--red);">⚠ Stoc Scăzut ≤7</div>
       <div class="stat-value" style="color:var(--red);">${nrScazut}</div>
     </div>
-    <div class="stat-card"><div class="stat-label">Angajați</div><div class="stat-value">${angajatiData.length}</div></div>
-  `;
+    <div class="stat-card"><div class="stat-label">Angajați</div><div class="stat-value">${angajatiData.length}</div></div>`;
 }
 
 window.showStocScazut = () => {
-  const haine = Object.values(stocData).sort((a, b) => a.denumire.localeCompare(b.denumire));
   const lista = [];
-
-  haine.forEach(h => {
-    if (estefaraMarimi(h)) {
-      const q = h.cantitate || 0;
-      if (q <= PRAG_SCAZUT) {
-        lista.push({ denumire: h.denumire, marime: '—', cantitate: q });
-      }
-    } else {
-      getMarimiArticol(h).forEach(m => {
-        const q = (h.marimi && h.marimi[m]) || 0;
-        if (q <= PRAG_SCAZUT) {
-          lista.push({ denumire: h.denumire, marime: m, cantitate: q });
-        }
-      });
-    }
+  Object.values(stocData).sort((a,b)=>a.denumire.localeCompare(b.denumire)).forEach(h => {
+    if (estefaraMarimi(h)) { if ((h.cantitate||0)<=PRAG_SCAZUT) lista.push({denumire:h.denumire,marime:'—',cantitate:h.cantitate||0}); }
+    else { getMarimiArticol(h).forEach(m => { const q=(h.marimi&&h.marimi[m])||0; if(q<=PRAG_SCAZUT) lista.push({denumire:h.denumire,marime:m,cantitate:q}); }); }
   });
-
   const div = document.getElementById('stoc-scazut-lista');
-  if (lista.length === 0) {
-    div.innerHTML = '<div style="color:var(--green);text-align:center;padding:20px;font-size:13px;">✅ Toate articolele au stoc suficient!</div>';
-  } else {
-    // Grupează pe articol
-    const grupate = {};
-    lista.forEach(item => {
-      if (!grupate[item.denumire]) grupate[item.denumire] = [];
-      grupate[item.denumire].push(item);
-    });
-    div.innerHTML = Object.entries(grupate).map(([denumire, items]) => `
+  if (!lista.length) { div.innerHTML='<div style="color:var(--green);text-align:center;padding:20px;">✅ Toate articolele au stoc suficient!</div>'; }
+  else {
+    const grupate={};
+    lista.forEach(i=>{ if(!grupate[i.denumire]) grupate[i.denumire]=[]; grupate[i.denumire].push(i); });
+    div.innerHTML = Object.entries(grupate).map(([den,items])=>`
       <div style="margin-bottom:12px;border:1px solid var(--border);border-left:3px solid var(--red);border-radius:4px;overflow:hidden;">
-        <div style="background:var(--surface2);padding:8px 14px;font-family:var(--font-display);font-size:17px;letter-spacing:1px;">${denumire}</div>
+        <div style="background:var(--surface2);padding:8px 14px;font-family:var(--font-display);font-size:17px;">${den}</div>
         <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;">
-          ${items.map(item => {
-            const cls = item.cantitate === 0 ? 'color:var(--muted)' : 'color:var(--red)';
-            const bg = item.cantitate === 0 ? 'background:#1a1a1a' : 'background:#1a0a0a';
-            return `<div style="${bg};border:1px solid var(--border);border-radius:3px;padding:6px 12px;text-align:center;min-width:56px;">
-              <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:3px;">${item.marime}</div>
-              <div style="font-family:var(--font-mono);font-size:20px;font-weight:500;${cls}">${item.cantitate}</div>
-            </div>`;
-          }).join('')}
+          ${items.map(i=>`<div style="background:${i.cantitate===0?'#1a1a1a':'#1a0a0a'};border:1px solid var(--border);border-radius:3px;padding:6px 12px;text-align:center;min-width:56px;">
+            <div style="font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:3px;">${i.marime}</div>
+            <div style="font-family:var(--font-mono);font-size:20px;color:${i.cantitate===0?'var(--muted)':'var(--red)'};">${i.cantitate}</div>
+          </div>`).join('')}
         </div>
       </div>`).join('');
   }
   openModal('modal-stoc-scazut');
 };
 
+function updateStocSelects() {
+  const haine = Object.values(stocData).sort((a,b)=>a.denumire.localeCompare(b.denumire));
+  const opts = '<option value="">— Selectează —</option>'+haine.map(h=>`<option value="${h.id}">${h.denumire}</option>`).join('');
+  ['stoc-haina','dist-haina','cor-haina'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=opts; });
+  const fh = document.getElementById('filter-haina');
+  if (fh) fh.innerHTML='<option value="">Toate articolele</option>'+haine.map(h=>`<option>${h.denumire}</option>`).join('');
+  const rfh = document.getElementById('raport-filter-angajat');
+  if (rfh) populateRaportFilter();
+}
+
 // =============================================
 // ANGAJATI
 // =============================================
-let unsubAngajati = null;
-
 function loadAngajati() {
   if (unsubAngajati) unsubAngajati();
-  unsubAngajati = onSnapshot(query(collection(db, 'angajati'), orderBy('nume')), snap => {
-    angajatiData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  unsubAngajati = onSnapshot(query(collection(db,'angajati'),orderBy('nume')), snap => {
+    angajatiData = snap.docs.map(d=>({id:d.id,...d.data()}));
     renderAngajati();
     populateAngajatiSelect();
     populateRaportFilter();
@@ -1437,24 +781,18 @@ function loadAngajati() {
 
 function renderAngajati() {
   const grid = document.getElementById('angajati-grid');
-  const search = (document.getElementById('search-angajati')?.value || '').toLowerCase();
-  const filtered = angajatiData.filter(a => a.nume.toLowerCase().includes(search));
-  if (filtered.length === 0) {
-    grid.innerHTML = '<div class="loading">Niciun angajat găsit.</div>'; return;
-  }
+  const search = (document.getElementById('search-angajati')?.value||'').toLowerCase();
+  const filtered = angajatiData.filter(a=>a.nume.toLowerCase().includes(search));
+  if (!filtered.length) { grid.innerHTML='<div class="loading">Niciun angajat găsit.</div>'; return; }
   grid.innerHTML = filtered.map(a => {
     const numeEsc = a.nume.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const deptEsc = (a.departament||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     return `<div class="angajat-card">
-      <div>
-        <div class="angajat-name">${a.nume}</div>
-        ${a.departament ? `<div class="angajat-dept">${a.departament}</div>` : ''}
-      </div>
-      ${currentRole === 'admin' ? `
-        <div style="display:flex;gap:6px;">
-          <button style="background:var(--surface2);border:1px solid var(--border);color:var(--accent);padding:6px 10px;border-radius:3px;cursor:pointer;font-size:12px;" onclick="editeazaAngajat('${a.id}','${numeEsc}','${deptEsc}')">✏</button>
-          <button class="btn-danger" onclick="stergeAngajat('${a.id}','${numeEsc}')">✕</button>
-        </div>` : ''}
+      <div><div class="angajat-name">${a.nume}</div>${a.departament?`<div class="angajat-dept">${a.departament}</div>`:''}</div>
+      ${currentRole==='admin'?`<div style="display:flex;gap:6px;">
+        <button style="background:var(--surface2);border:1px solid var(--border);color:var(--accent);padding:6px 10px;border-radius:3px;cursor:pointer;font-size:12px;" onclick="editeazaAngajat('${a.id}','${numeEsc}','${deptEsc}')">✏</button>
+        <button class="btn-danger" onclick="stergeAngajat('${a.id}','${numeEsc}')">✕</button>
+      </div>`:''}
     </div>`;
   }).join('');
 }
@@ -1462,39 +800,33 @@ function renderAngajati() {
 function populateAngajatiSelect() {
   const sel = document.getElementById('dist-angajat');
   const cur = sel.value;
-  sel.innerHTML = '<option value="">— Selectează angajat —</option>' +
-    angajatiData.map(a => `<option value="${a.id}" ${a.id === cur ? 'selected' : ''}>${a.nume}</option>`).join('');
+  sel.innerHTML = '<option value="">— Selectează angajat —</option>'+angajatiData.map(a=>`<option value="${a.id}"${a.id===cur?' selected':''}>${a.nume}</option>`).join('');
 }
-
-window.filterAngajati = () => renderAngajati();
 
 window.adaugaAngajat = async () => {
   const nume = document.getElementById('ang-name').value.trim();
   const dept = document.getElementById('ang-dept').value.trim();
-  if (!nume) { showToast('Introduceți un nume!', true); return; }
-
-  // Verifică duplicat direct din Firestore
-  const q = query(collection(db, 'angajati'), where('nume', '==', nume));
+  if (!nume) { showToast('Introduceți un nume!',true); return; }
+  const q = query(collection(db,'angajati'),where('nume','==',nume));
   const snap = await getDocs(q);
-  if (!snap.empty) { showToast(`"${nume}" există deja în listă!`, true); return; }
-
-  await addDoc(collection(db, 'angajati'), { nume, departament: dept, creatLa: serverTimestamp() });
+  if (!snap.empty) { showToast(`"${nume}" există deja!`,true); return; }
+  await addDoc(collection(db,'angajati'),{nume,departament:dept,creatLa:serverTimestamp()});
   closeModal('modal-add-angajat');
-  document.getElementById('ang-name').value = '';
-  document.getElementById('ang-dept').value = '';
+  document.getElementById('ang-name').value='';
+  document.getElementById('ang-dept').value='';
   showToast(`Angajat "${nume}" adăugat!`);
 };
 
-window.stergeAngajat = async (id, nume) => {
+window.stergeAngajat = async (id,nume) => {
   if (!confirm(`Ștergi angajatul "${nume}"?`)) return;
-  await deleteDoc(doc(db, 'angajati', id));
-  showToast(`Angajat "${nume}" șters.`);
+  await deleteDoc(doc(db,'angajati',id));
+  showToast(`"${nume}" șters.`);
 };
 
-window.editeazaAngajat = (id, nume, dept) => {
-  document.getElementById('edit-ang-id').value = id;
-  document.getElementById('edit-ang-name').value = nume;
-  document.getElementById('edit-ang-dept').value = dept;
+window.editeazaAngajat = (id,nume,dept) => {
+  document.getElementById('edit-ang-id').value=id;
+  document.getElementById('edit-ang-name').value=nume;
+  document.getElementById('edit-ang-dept').value=dept;
   openModal('modal-edit-angajat');
 };
 
@@ -1502,157 +834,94 @@ window.salveazaAngajat = async () => {
   const id = document.getElementById('edit-ang-id').value;
   const nume = document.getElementById('edit-ang-name').value.trim();
   const dept = document.getElementById('edit-ang-dept').value.trim();
-  if (!nume) { showToast('Numele nu poate fi gol!', true); return; }
-  await updateDoc(doc(db, 'angajati', id), { nume, departament: dept });
+  if (!nume) { showToast('Numele nu poate fi gol!',true); return; }
+  await updateDoc(doc(db,'angajati',id),{nume,departament:dept});
   closeModal('modal-edit-angajat');
   showToast(`Angajat actualizat: "${nume}"`);
 };
 
 // =============================================
-// STOC SELECTS
+// DISTRIBUIRE
 // =============================================
-function updateStocSelects() {
-  const haine = Object.values(stocData).sort((a, b) => a.denumire.localeCompare(b.denumire));
-  const opts = '<option value="">— Selectează —</option>' + haine.map(h => `<option value="${h.id}">${h.denumire}</option>`).join('');
-  document.getElementById('stoc-haina').innerHTML = opts;
-  document.getElementById('dist-haina').innerHTML = opts;
-  if (document.getElementById('cor-haina')) document.getElementById('cor-haina').innerHTML = opts;
-  // filter dropdown in istoric
-  const fh = document.getElementById('filter-haina');
-  if (fh) fh.innerHTML = '<option value="">Toate articolele</option>' + haine.map(h => `<option>${h.denumire}</option>`).join('');
-}
-
-function setupDistribuireSelects() {
-  // run after stoc loads
-}
-
 window.updateSizeOptions = () => {
   const hId = document.getElementById('dist-haina').value;
   const sel = document.getElementById('dist-marime');
   const marimeRow = document.getElementById('dist-marime-row');
   const info = document.getElementById('dist-stoc-info');
-  if (!hId || !stocData[hId]) {
-    sel.innerHTML = '<option value="">— Mărime —</option>';
-    marimeRow.style.display = '';
-    info.textContent = '';
-    return;
-  }
+  if (!hId||!stocData[hId]) { sel.innerHTML='<option value="">— Mărime —</option>'; marimeRow.style.display=''; info.textContent=''; return; }
   const h = stocData[hId];
   const fara = estefaraMarimi(h);
   if (fara) {
-    // Fără mărimi — ascunde rândul și setează marime = 'N/A'
-    marimeRow.style.display = 'none';
-    sel.innerHTML = '<option value="N/A">N/A</option>';
-    sel.value = 'N/A';
-    const q = h.cantitate || 0;
-    info.textContent = `Stoc disponibil: ${q} bucăți`;
-    info.style.color = q <= PRAG_SCAZUT ? 'var(--red)' : 'var(--green)';
+    marimeRow.style.display='none';
+    sel.innerHTML='<option value="N/A">N/A</option>'; sel.value='N/A';
+    const q=h.cantitate||0;
+    info.textContent=`Stoc disponibil: ${q} bucăți`;
+    info.style.color=q<=PRAG_SCAZUT?'var(--red)':'var(--green)';
   } else {
-    marimeRow.style.display = '';
-    sel.innerHTML = '<option value="">— Mărime —</option>' +
-      getMarimiArticol(h).map(m => {
-        const q = (h.marimi && h.marimi[m]) || 0;
-        return `<option value="${m}" ${q === 0 ? 'disabled style="color:#666"' : ''}>${m} (stoc: ${q})</option>`;
-      }).join('');
-    sel.onchange = updateStocInfo;
-    updateStocInfo();
+    marimeRow.style.display='';
+    sel.innerHTML='<option value="">— Mărime —</option>'+getMarimiArticol(h).map(m=>{
+      const q=(h.marimi&&h.marimi[m])||0;
+      return `<option value="${m}"${q===0?' disabled style="color:#666"':''}>${m} (stoc: ${q})</option>`;
+    }).join('');
+    sel.onchange=updateStocInfo; updateStocInfo();
   }
 };
 
 function updateStocInfo() {
-  const hId = document.getElementById('dist-haina').value;
-  const m = document.getElementById('dist-marime').value;
-  const info = document.getElementById('dist-stoc-info');
-  if (!hId || !m || !stocData[hId]) { info.textContent = ''; return; }
-  const q = (stocData[hId].marimi && stocData[hId].marimi[m]) || 0;
-  info.textContent = `Stoc disponibil: ${q} bucăți`;
-  info.style.color = q <= PRAG_SCAZUT ? 'var(--red)' : 'var(--green)';
+  const hId=document.getElementById('dist-haina').value, m=document.getElementById('dist-marime').value;
+  const info=document.getElementById('dist-stoc-info');
+  if(!hId||!m||!stocData[hId]){info.textContent='';return;}
+  const q=(stocData[hId].marimi&&stocData[hId].marimi[m])||0;
+  info.textContent=`Stoc disponibil: ${q} bucăți`;
+  info.style.color=q<=PRAG_SCAZUT?'var(--red)':'var(--green)';
 }
 
-// =============================================
-// DISTRIBUIRE
-// =============================================
 window.distribuieHaine = async () => {
-  const angId = document.getElementById('dist-angajat').value;
-  const hId = document.getElementById('dist-haina').value;
-  const marime = document.getElementById('dist-marime').value;
-  const qty = parseInt(document.getElementById('dist-qty').value) || 1;
-
-  if (!angId) { showToast('Selectează un angajat!', true); return; }
-  if (!hId) { showToast('Selectează un articol!', true); return; }
-  if (!marime) { showToast('Selectează o mărime!', true); return; }
-  if (qty < 1) { showToast('Cantitate invalidă!', true); return; }
-
-  const haina = stocData[hId];
-  const fara = estefaraMarimi(haina);
-
-  // Verifică stoc disponibil
-  const stocCurent = fara
-    ? (haina?.cantitate || 0)
-    : (stocData[hId]?.marimi?.[marime] || 0);
-
-  if (qty > stocCurent) {
-    showToast(`Stoc insuficient! Disponibil: ${stocCurent}`, true);
-    return;
-  }
-
-  const angajat = angajatiData.find(a => a.id === angId);
-  const batch = writeBatch(db);
-
-  // Scade din stoc
-  const stocRef = doc(db, 'stoc', hId);
-  if (fara) {
-    batch.update(stocRef, { cantitate: increment(-qty) });
-  } else {
-    batch.update(stocRef, { [`marimi.${marime}`]: increment(-qty) });
-  }
-
-  // Adaugă în istoric
-  const istoricRef = doc(collection(db, 'istoric'));
-  batch.set(istoricRef, {
-    angajatId: angId,
-    angajatNume: angajat?.nume || '—',
-    hainaId: hId,
-    hainaDenumire: haina?.denumire || '—',
-    marime: fara ? '—' : marime,
-    cantitate: qty,
-    operator: currentOperatorName || '—',
-    data: serverTimestamp()
+  const angId=document.getElementById('dist-angajat').value;
+  const hId=document.getElementById('dist-haina').value;
+  const marime=document.getElementById('dist-marime').value;
+  const qty=parseInt(document.getElementById('dist-qty').value)||1;
+  if (!angId){showToast('Selectează un angajat!',true);return;}
+  if (!hId){showToast('Selectează un articol!',true);return;}
+  if (!marime){showToast('Selectează o mărime!',true);return;}
+  if (qty<1){showToast('Cantitate invalidă!',true);return;}
+  const haina=stocData[hId], fara=estefaraMarimi(haina);
+  const stocCurent=fara?(haina?.cantitate||0):(stocData[hId]?.marimi?.[marime]||0);
+  if (qty>stocCurent){showToast(`Stoc insuficient! Disponibil: ${stocCurent}`,true);return;}
+  const angajat=angajatiData.find(a=>a.id===angId);
+  const batch=writeBatch(db);
+  if (fara) batch.update(doc(db,'stoc',hId),{cantitate:increment(-qty)});
+  else batch.update(doc(db,'stoc',hId),{[`marimi.${marime}`]:increment(-qty)});
+  batch.set(doc(collection(db,'istoric')),{
+    angajatId:angId, angajatNume:angajat?.nume||'—',
+    hainaId:hId, hainaDenumire:haina?.denumire||'—',
+    marime:fara?'—':marime, cantitate:qty,
+    operator:currentOperatorName||'—', data:serverTimestamp()
   });
-
   await batch.commit();
-  showToast(`✅ ${qty}x ${haina.denumire}${fara ? '' : ' ' + marime} → ${angajat?.nume}!`);
-
-  // Reset complet formular
-  document.getElementById('dist-angajat').value = '';
-  document.getElementById('dist-haina').value = '';
-  document.getElementById('dist-marime').innerHTML = '<option value="">— Mărime —</option>';
-  document.getElementById('dist-marime-row').style.display = '';
-  document.getElementById('dist-qty').value = 1;
-  document.getElementById('dist-stoc-info').textContent = '';
+  showToast(`✅ ${qty}x ${haina.denumire}${fara?'':' '+marime} → ${angajat?.nume}!`);
+  document.getElementById('dist-angajat').value='';
+  document.getElementById('dist-haina').value='';
+  document.getElementById('dist-marime').innerHTML='<option value="">— Mărime —</option>';
+  document.getElementById('dist-marime-row').style.display='';
+  document.getElementById('dist-qty').value=1;
+  document.getElementById('dist-stoc-info').textContent='';
   loadRecentDistribuiri();
 };
 
 async function loadRecentDistribuiri() {
-  const snap = await getDocs(query(collection(db, 'istoric'), orderBy('data', 'desc'), limit(10)));
-  const div = document.getElementById('distribuiri-recente');
-  if (snap.empty) { div.innerHTML = '<div style="color:var(--muted);font-size:12px;">Nicio distribuire încă.</div>'; return; }
-  div.innerHTML = snap.docs.map(d => {
-    const x = d.data();
-    const dt = x.data?.toDate ? x.data.toDate() : new Date();
-    const data = dt.toLocaleDateString('ro-RO', {day:'2-digit', month:'2-digit', year:'numeric'});
-    const ora = dt.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
-    const marime = x.marime && x.marime !== '—' ? ` · <span class="badge-size">${x.marime}</span>` : '';
+  const snap=await getDocs(query(collection(db,'istoric'),orderBy('data','desc'),limit(10)));
+  const div=document.getElementById('distribuiri-recente');
+  if (snap.empty){div.innerHTML='<div style="color:var(--muted);font-size:12px;">Nicio distribuire încă.</div>';return;}
+  div.innerHTML=snap.docs.map(d=>{
+    const x=d.data(), dt=x.data?.toDate?x.data.toDate():new Date();
+    const data=dt.toLocaleDateString('ro-RO',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const ora=dt.toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'});
+    const marime=x.marime&&x.marime!=='—'?`<span class="badge-size">${x.marime}</span>`:'';
     return `<div style="border-bottom:1px solid var(--border);padding:10px 0;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-        <div style="font-weight:600;font-size:13px;">${x.angajatNume}</div>
-        <div style="font-size:10px;color:var(--accent);white-space:nowrap;font-family:var(--font-mono);">${ora}</div>
-      </div>
-      <div style="font-size:12px;color:var(--muted);margin:2px 0;">${x.hainaDenumire}${marime} · <span style="color:var(--text);font-family:var(--font-mono);">${x.cantitate} buc</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:3px;">
-        <span style="color:var(--muted);">👤 ${x.operator || '—'}</span>
-        <span style="color:var(--muted);">${data}</span>
-      </div>
+      <div style="display:flex;justify-content:space-between;"><div style="font-weight:600;font-size:13px;">${x.angajatNume}</div><div style="font-size:10px;color:var(--accent);font-family:var(--font-mono);">${ora}</div></div>
+      <div style="font-size:12px;color:var(--muted);margin:2px 0;">${x.hainaDenumire} ${marime} · <span style="color:var(--text);font-family:var(--font-mono);">${x.cantitate} buc</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:3px;"><span style="color:var(--muted);">👤 ${x.operator||'—'}</span><span style="color:var(--muted);">${data}</span></div>
     </div>`;
   }).join('');
 }
@@ -1662,498 +931,265 @@ async function loadRecentDistribuiri() {
 // =============================================
 function loadIstoric() {
   if (unsubIstoric) unsubIstoric();
-  unsubIstoric = onSnapshot(query(collection(db, 'istoric'), orderBy('data', 'desc')), snap => {
-    istoricData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  unsubIstoric = onSnapshot(query(collection(db,'istoric'),orderBy('data','desc')), snap => {
+    istoricData=snap.docs.map(d=>({id:d.id,...d.data()}));
     renderIstoric();
     loadRecentDistribuiri();
   });
 }
 
 function renderIstoric() {
-  const tbody = document.getElementById('istoric-tbody');
-  const search = (document.getElementById('search-istoric')?.value || '').toLowerCase();
-  const filterH = (document.getElementById('filter-haina')?.value || '').toLowerCase();
-  let rows = istoricData;
-  if (search) rows = rows.filter(r => (r.angajatNume || '').toLowerCase().includes(search) || (r.hainaDenumire || '').toLowerCase().includes(search) || (r.operator || '').toLowerCase().includes(search));
-  if (filterH) rows = rows.filter(r => (r.hainaDenumire || '').toLowerCase() === filterH);
-  if (rows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px;">Nicio înregistrare.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = rows.map(r => {
-    const dt = r.data?.toDate ? r.data.toDate() : new Date();
-    const data = dt.toLocaleDateString('ro-RO', {day:'2-digit', month:'2-digit', year:'numeric'});
-    const ora = dt.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
-    const marime = r.marime && r.marime !== '—' ? `<span class="badge-size">${r.marime}</span>` : '<span style="color:var(--muted)">—</span>';
+  const tbody=document.getElementById('istoric-tbody');
+  const search=(document.getElementById('search-istoric')?.value||'').toLowerCase();
+  const filterH=(document.getElementById('filter-haina')?.value||'').toLowerCase();
+  let rows=istoricData;
+  if (search) rows=rows.filter(r=>(r.angajatNume||'').toLowerCase().includes(search)||(r.hainaDenumire||'').toLowerCase().includes(search)||(r.operator||'').toLowerCase().includes(search));
+  if (filterH) rows=rows.filter(r=>(r.hainaDenumire||'').toLowerCase()===filterH);
+  if (!rows.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px;">Nicio înregistrare.</td></tr>';return;}
+  tbody.innerHTML=rows.map(r=>{
+    const dt=r.data?.toDate?r.data.toDate():new Date();
+    const data=dt.toLocaleDateString('ro-RO',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const ora=dt.toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'});
+    const marime=r.marime&&r.marime!=='—'?`<span class="badge-size">${r.marime}</span>`:'<span style="color:var(--muted)">—</span>';
     return `<tr>
       <td style="white-space:nowrap;">${data}</td>
       <td style="font-family:var(--font-mono);color:var(--accent);font-size:12px;">${ora}</td>
-      <td style="font-weight:500;">${r.angajatNume || '—'}</td>
-      <td>${r.hainaDenumire || '—'}</td>
+      <td style="font-weight:500;">${r.angajatNume||'—'}</td>
+      <td>${r.hainaDenumire||'—'}</td>
       <td>${marime}</td>
-      <td><span class="qty-tag">${r.cantitate || 1}</span></td>
-      <td style="color:var(--accent);font-size:12px;">👤 ${r.operator || '—'}</td>
+      <td><span class="qty-tag">${r.cantitate||1}</span></td>
+      <td style="color:var(--accent);font-size:12px;">👤 ${r.operator||'—'}</td>
     </tr>`;
   }).join('');
 }
-
 window.filterIstoric = renderIstoric;
 
-// =============================================
-// EXPORT CSV
-// =============================================
 window.exportCSV = () => {
-  const rows = [['Data', 'Angajat', 'Articol', 'Marime', 'Cantitate', 'Operator']];
-  istoricData.forEach(r => {
-    const dt = r.data?.toDate ? r.data.toDate() : new Date();
-    rows.push([dt.toLocaleDateString('ro-RO'), r.angajatNume, r.hainaDenumire, r.marime, r.cantitate, r.operator]);
+  const rows=[['Data','Ora','Angajat','Articol','Marime','Cantitate','Operator']];
+  istoricData.forEach(r=>{
+    const dt=r.data?.toDate?r.data.toDate():new Date();
+    rows.push([dt.toLocaleDateString('ro-RO'),dt.toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'}),r.angajatNume,r.hainaDenumire,r.marime,r.cantitate,r.operator]);
   });
-  const csv = rows.map(r => r.join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `istoric_stoc_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
+  downloadCSV(rows,'istoric_distribuiri');
 };
 
-// Toggle mărime în modal adaugă stoc
-window.updateStocModalMarime = () => {
-  const hId = document.getElementById('stoc-haina').value;
-  if (!hId || !stocData[hId]) return;
-  const h = stocData[hId];
-  const fara = estefaraMarimi(h);
-  document.getElementById('stoc-marime-row').style.display = fara ? 'none' : '';
-  document.getElementById('stoc-qty-only').style.display = fara ? '' : 'none';
-  if (!fara) {
-    const sel = document.getElementById('stoc-marime');
-    sel.innerHTML = '<option value="">— Mărime —</option>' +
-      getMarimiArticol(h).map(m => `<option value="${m}">${m}</option>`).join('');
-  }
+// =============================================
+// ADĂUGĂRI STOC
+// =============================================
+function loadAdaugari() {
+  if (unsubAdaugari) unsubAdaugari();
+  unsubAdaugari = onSnapshot(query(collection(db,'adaugari'),orderBy('data','desc')), snap => {
+    adaugariData=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderAdaugari();
+  });
+}
+
+window.renderAdaugari = () => {
+  const tbody=document.getElementById('adaugari-tbody');
+  if (!tbody) return;
+  const search=(document.getElementById('search-adaugari')?.value||'').toLowerCase();
+  const tip=document.getElementById('filter-tip-adaugare')?.value||'';
+  let rows=adaugariData;
+  if (search) rows=rows.filter(r=>(r.hainaDenumire||'').toLowerCase().includes(search)||(r.observatii||'').toLowerCase().includes(search));
+  if (tip==='corectie') rows=rows.filter(r=>(r.observatii||'').startsWith('CORECȚIE:'));
+  if (tip==='adaugare') rows=rows.filter(r=>!(r.observatii||'').startsWith('CORECȚIE:'));
+  if (!rows.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;">Nicio înregistrare.</td></tr>';return;}
+  tbody.innerHTML=rows.map(r=>{
+    const dt=r.data?.toDate?r.data.toDate():new Date();
+    const data=dt.toLocaleDateString('ro-RO',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const ora=dt.toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'});
+    const marime=r.marime&&r.marime!=='—'?`<span class="badge-size">${r.marime}</span>`:'<span style="color:var(--muted)">—</span>';
+    const esCor=(r.observatii||'').startsWith('CORECȚIE:');
+    const cantTag=esCor?`<span class="qty-tag" style="color:${r.cantitate>=0?'var(--green)':'var(--red)'};">${r.cantitate>=0?'+':''}${r.cantitate}</span>`:`<span class="qty-tag" style="color:var(--green);">+${r.cantitate||0}</span>`;
+    const tipBadge=esCor?`<span style="background:#2a1515;color:var(--red);font-size:9px;padding:2px 6px;border-radius:3px;letter-spacing:1px;margin-left:6px;">CORECȚIE</span>`:`<span style="background:#0a1a0a;color:var(--green);font-size:9px;padding:2px 6px;border-radius:3px;letter-spacing:1px;margin-left:6px;">ADĂUGARE</span>`;
+    return `<tr>
+      <td style="white-space:nowrap;">${data}</td>
+      <td style="font-family:var(--font-mono);color:var(--accent);font-size:12px;">${ora}</td>
+      <td style="font-weight:500;">${r.hainaDenumire||'—'}${tipBadge}</td>
+      <td>${marime}</td><td>${cantTag}</td>
+      <td style="color:var(--muted);font-size:12px;">${esCor?(r.observatii||'').replace('CORECȚIE: ',''):(r.observatii||'—')}</td>
+    </tr>`;
+  }).join('');
+};
+
+window.exportCSVAdaugari = () => {
+  const rows=[['Data','Ora','Articol','Marime','Cantitate','Observatii']];
+  adaugariData.forEach(r=>{
+    const dt=r.data?.toDate?r.data.toDate():new Date();
+    rows.push([dt.toLocaleDateString('ro-RO'),dt.toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'}),r.hainaDenumire,r.marime,r.cantitate,r.observatii||'']);
+  });
+  downloadCSV(rows,'adaugari_stoc');
 };
 
 // =============================================
 // ADAUGĂ STOC
 // =============================================
+window.updateStocModalMarime = () => {
+  const hId=document.getElementById('stoc-haina').value;
+  if (!hId||!stocData[hId]) return;
+  const h=stocData[hId], fara=estefaraMarimi(h);
+  document.getElementById('stoc-marime-row').style.display=fara?'none':'';
+  document.getElementById('stoc-qty-only').style.display=fara?'':'none';
+  if (!fara) {
+    const sel=document.getElementById('stoc-marime');
+    sel.innerHTML='<option value="">— Mărime —</option>'+getMarimiArticol(h).map(m=>`<option value="${m}">${m}</option>`).join('');
+  }
+};
+
 window.adaugaStoc = async () => {
-  const hId = document.getElementById('stoc-haina').value;
-  const obs = document.getElementById('stoc-obs').value.trim();
-  if (!hId) { showToast('Selectează un articol!', true); return; }
-
-  const haina = stocData[hId];
-  const fara = estefaraMarimi(haina);
-
-  let marime, qty;
-  if (fara) {
-    marime = '—';
-    qty = parseInt(document.getElementById('stoc-qty-fara').value) || 0;
-  } else {
-    marime = document.getElementById('stoc-marime').value;
-    qty = parseInt(document.getElementById('stoc-qty').value) || 0;
-    if (!marime) { showToast('Selectează o mărime!', true); return; }
-  }
-  if (qty <= 0) { showToast('Cantitate invalidă!', true); return; }
-
-  const batch = writeBatch(db);
-
-  // Actualizează stocul
-  const stocRef = doc(db, 'stoc', hId);
-  if (fara) {
-    batch.update(stocRef, { cantitate: increment(qty) });
-  } else {
-    batch.update(stocRef, { [`marimi.${marime}`]: increment(qty) });
-  }
-
-  // Salvează în colecția adaugari (istoric adăugări)
-  const adaugareRef = doc(collection(db, 'adaugari'));
-  batch.set(adaugareRef, {
-    hainaId: hId,
-    hainaDenumire: haina?.denumire || '—',
-    marime,
-    cantitate: qty,
-    observatii: obs || '',
-    data: serverTimestamp()
-  });
-
+  const hId=document.getElementById('stoc-haina').value;
+  const obs=document.getElementById('stoc-obs').value.trim();
+  if (!hId){showToast('Selectează un articol!',true);return;}
+  const haina=stocData[hId], fara=estefaraMarimi(haina);
+  let marime,qty;
+  if (fara){marime='—';qty=parseInt(document.getElementById('stoc-qty-fara').value)||0;}
+  else{marime=document.getElementById('stoc-marime').value;qty=parseInt(document.getElementById('stoc-qty').value)||0;if(!marime){showToast('Selectează o mărime!',true);return;}}
+  if (qty<=0){showToast('Cantitate invalidă!',true);return;}
+  const batch=writeBatch(db);
+  if (fara) batch.update(doc(db,'stoc',hId),{cantitate:increment(qty)});
+  else batch.update(doc(db,'stoc',hId),{[`marimi.${marime}`]:increment(qty)});
+  batch.set(doc(collection(db,'adaugari')),{hainaId:hId,hainaDenumire:haina?.denumire||'—',marime,cantitate:qty,observatii:obs||'',data:serverTimestamp()});
   await batch.commit();
   closeModal('modal-add-stoc');
-  // Reset modal
-  document.getElementById('stoc-haina').value = '';
-  document.getElementById('stoc-marime').value = '';
-  document.getElementById('stoc-qty').value = 1;
-  document.getElementById('stoc-qty-fara').value = 1;
-  document.getElementById('stoc-obs').value = '';
-  document.getElementById('stoc-marime-row').style.display = '';
-  document.getElementById('stoc-qty-only').style.display = 'none';
-  showToast(`✅ +${qty} ${haina?.denumire}${fara ? '' : ' ' + marime} adăugat în stoc!`);
-  loadAdaugari();
+  document.getElementById('stoc-haina').value='';
+  document.getElementById('stoc-marime').innerHTML='<option value="">— Mărime —</option>';
+  document.getElementById('stoc-qty').value=1;
+  document.getElementById('stoc-qty-fara').value=1;
+  document.getElementById('stoc-obs').value='';
+  document.getElementById('stoc-marime-row').style.display='';
+  document.getElementById('stoc-qty-only').style.display='none';
+  showToast(`✅ +${qty} ${haina?.denumire}${fara?'':' '+marime} adăugat!`);
 };
 
 // =============================================
-// CORECTEAZĂ STOC — setează cantitate exactă
+// CORECTEAZĂ STOC
 // =============================================
 window.updateCorectareMarime = () => {
-  const hId = document.getElementById('cor-haina').value;
-  if (!hId || !stocData[hId]) return;
-  const h = stocData[hId];
-  const fara = estefaraMarimi(h);
-  document.getElementById('cor-marime-row').style.display = fara ? 'none' : '';
-  document.getElementById('cor-marime').value = '';
-  document.getElementById('cor-stoc-curent').textContent = '—';
-  if (fara) {
-    const q = h.cantitate || 0;
-    document.getElementById('cor-stoc-curent').textContent = q + ' buc';
-  } else {
-    const sel = document.getElementById('cor-marime');
-    sel.innerHTML = '<option value="">— Mărime —</option>' +
-      getMarimiArticol(h).map(m => `<option value="${m}">${m}</option>`).join('');
+  const hId=document.getElementById('cor-haina').value;
+  if (!hId||!stocData[hId]) return;
+  const h=stocData[hId], fara=estefaraMarimi(h);
+  document.getElementById('cor-marime-row').style.display=fara?'none':'';
+  document.getElementById('cor-marime').value='';
+  document.getElementById('cor-stoc-curent').textContent='—';
+  if (fara) document.getElementById('cor-stoc-curent').textContent=(h.cantitate||0)+' buc';
+  else {
+    const sel=document.getElementById('cor-marime');
+    sel.innerHTML='<option value="">— Mărime —</option>'+getMarimiArticol(h).map(m=>`<option value="${m}">${m}</option>`).join('');
   }
 };
 
 window.updateCorectareStocCurent = () => {
-  const hId = document.getElementById('cor-haina').value;
-  const m = document.getElementById('cor-marime').value;
-  if (!hId || !m) { document.getElementById('cor-stoc-curent').textContent = '—'; return; }
-  const q = stocData[hId]?.marimi?.[m] || 0;
-  document.getElementById('cor-stoc-curent').textContent = q + ' buc';
+  const hId=document.getElementById('cor-haina').value, m=document.getElementById('cor-marime').value;
+  if (!hId||!m){document.getElementById('cor-stoc-curent').textContent='—';return;}
+  document.getElementById('cor-stoc-curent').textContent=(stocData[hId]?.marimi?.[m]||0)+' buc';
 };
 
 window.corecteazaStoc = async () => {
-  const hId = document.getElementById('cor-haina').value;
-  const motiv = document.getElementById('cor-motiv').value.trim();
-  const nouaQty = parseInt(document.getElementById('cor-qty').value);
-  if (!hId) { showToast('Selectează un articol!', true); return; }
-  if (isNaN(nouaQty) || nouaQty < 0) { showToast('Introduceți o cantitate validă (≥ 0)!', true); return; }
-
-  const haina = stocData[hId];
-  const fara = estefaraMarimi(haina);
-  const marime = fara ? '—' : document.getElementById('cor-marime').value;
-  if (!fara && !marime) { showToast('Selectează o mărime!', true); return; }
-
-  const stocVechi = fara
-    ? (haina?.cantitate || 0)
-    : (haina?.marimi?.[marime] || 0);
-
-  if (!confirm(`Schimbi stocul ${haina.denumire}${fara ? '' : ' ' + marime} de la ${stocVechi} → ${nouaQty} bucăți?`)) return;
-
-  const batch = writeBatch(db);
-  const stocRef = doc(db, 'stoc', hId);
-
-  if (fara) {
-    batch.update(stocRef, { cantitate: nouaQty });
-  } else {
-    batch.update(stocRef, { [`marimi.${marime}`]: nouaQty });
-  }
-
-  // Salvează în adaugari cu diferența
-  const diferenta = nouaQty - stocVechi;
-  const adaugareRef = doc(collection(db, 'adaugari'));
-  batch.set(adaugareRef, {
-    hainaId: hId,
-    hainaDenumire: haina?.denumire || '—',
-    marime,
-    cantitate: diferenta,
-    observatii: `CORECȚIE: ${stocVechi}→${nouaQty}${motiv ? ' | ' + motiv : ''}`,
-    data: serverTimestamp()
-  });
-
+  const hId=document.getElementById('cor-haina').value;
+  const motiv=document.getElementById('cor-motiv').value.trim();
+  const nouaQty=parseInt(document.getElementById('cor-qty').value);
+  if (!hId){showToast('Selectează un articol!',true);return;}
+  if (isNaN(nouaQty)||nouaQty<0){showToast('Cantitate invalidă (≥0)!',true);return;}
+  const haina=stocData[hId], fara=estefaraMarimi(haina);
+  const marime=fara?'—':document.getElementById('cor-marime').value;
+  if (!fara&&!marime){showToast('Selectează o mărime!',true);return;}
+  const stocVechi=fara?(haina?.cantitate||0):(haina?.marimi?.[marime]||0);
+  if (!confirm(`Schimbi stocul ${haina.denumire}${fara?'':' '+marime} de la ${stocVechi} → ${nouaQty}?`)) return;
+  const batch=writeBatch(db);
+  if (fara) batch.update(doc(db,'stoc',hId),{cantitate:nouaQty});
+  else batch.update(doc(db,'stoc',hId),{[`marimi.${marime}`]:nouaQty});
+  const dif=nouaQty-stocVechi;
+  batch.set(doc(collection(db,'adaugari')),{hainaId:hId,hainaDenumire:haina?.denumire||'—',marime,cantitate:dif,observatii:`CORECȚIE: ${stocVechi}→${nouaQty}${motiv?' | '+motiv:''}`,data:serverTimestamp()});
   await batch.commit();
   closeModal('modal-corecteaza-stoc');
-  document.getElementById('cor-haina').value = '';
-  document.getElementById('cor-marime').value = '';
-  document.getElementById('cor-qty').value = '';
-  document.getElementById('cor-motiv').value = '';
-  document.getElementById('cor-stoc-curent').textContent = '—';
-  showToast(`✅ Stoc corectat: ${haina.denumire}${fara ? '' : ' ' + marime} = ${nouaQty} buc`);
-  loadAdaugari();
-};
-let adaugariData = [];
-let unsubAdaugari = null;
-
-function loadAdaugari() {
-  if (unsubAdaugari) unsubAdaugari();
-  unsubAdaugari = onSnapshot(query(collection(db, 'adaugari'), orderBy('data', 'desc')), snap => {
-    adaugariData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderAdaugari();
-  });
-}
-
-function renderAdaugari() {
-  const tbody = document.getElementById('adaugari-tbody');
-  if (!tbody) return;
-  const search = (document.getElementById('search-adaugari')?.value || '').toLowerCase();
-  const tip = document.getElementById('filter-tip-adaugare')?.value || '';
-  let rows = adaugariData;
-  if (search) rows = rows.filter(r =>
-    (r.hainaDenumire || '').toLowerCase().includes(search) ||
-    (r.observatii || '').toLowerCase().includes(search)
-  );
-  if (tip === 'corectie') rows = rows.filter(r => (r.observatii || '').startsWith('CORECȚIE:'));
-  if (tip === 'adaugare') rows = rows.filter(r => !(r.observatii || '').startsWith('CORECȚIE:'));
-
-  if (rows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;">Nicio înregistrare.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = rows.map(r => {
-    const dt = r.data?.toDate ? r.data.toDate() : new Date();
-    const data = dt.toLocaleDateString('ro-RO', {day:'2-digit', month:'2-digit', year:'numeric'});
-    const ora = dt.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
-    const marime = r.marime && r.marime !== '—' ? `<span class="badge-size">${r.marime}</span>` : '<span style="color:var(--muted)">—</span>';
-    const eCorectie = (r.observatii || '').startsWith('CORECȚIE:');
-    const cantTag = eCorectie
-      ? `<span class="qty-tag" style="color:${r.cantitate >= 0 ? 'var(--green)' : 'var(--red)'};">${r.cantitate >= 0 ? '+' : ''}${r.cantitate}</span>`
-      : `<span class="qty-tag" style="color:var(--green);">+${r.cantitate || 0}</span>`;
-    const tipBadge = eCorectie
-      ? `<span style="background:#2a1515;color:var(--red);font-size:9px;padding:2px 6px;border-radius:3px;letter-spacing:1px;">CORECȚIE</span>`
-      : `<span style="background:#0a1a0a;color:var(--green);font-size:9px;padding:2px 6px;border-radius:3px;letter-spacing:1px;">ADĂUGARE</span>`;
-    return `<tr>
-      <td style="white-space:nowrap;">${data}</td>
-      <td style="font-family:var(--font-mono);color:var(--accent);font-size:12px;">${ora}</td>
-      <td style="font-weight:500;">${r.hainaDenumire || '—'} ${tipBadge}</td>
-      <td>${marime}</td>
-      <td>${cantTag}</td>
-      <td style="color:var(--muted);font-size:12px;">${eCorectie ? (r.observatii || '').replace('CORECȚIE: ','') : (r.observatii || '—')}</td>
-    </tr>`;
-  }).join('');
-}
-
-window.filterAdaugari = renderAdaugari;
-
-window.exportCSVAdaugari = () => {
-  const rows = [['Data', 'Ora', 'Articol', 'Marime', 'Cantitate', 'Observatii']];
-  adaugariData.forEach(r => {
-    const dt = r.data?.toDate ? r.data.toDate() : new Date();
-    rows.push([
-      dt.toLocaleDateString('ro-RO'),
-      dt.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'}),
-      r.hainaDenumire, r.marime, r.cantitate, r.observatii || ''
-    ]);
-  });
-  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `adaugari_stoc_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
+  ['cor-haina','cor-marime','cor-qty','cor-motiv'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cor-stoc-curent').textContent='—';
+  showToast(`✅ Stoc corectat: ${haina.denumire}${fara?'':' '+marime} = ${nouaQty} buc`);
 };
 
 // =============================================
-// ADAUGĂ HAINA
+// ADAUGĂ ARTICOL NOU
 // =============================================
 window.updateHainaMarimiInput = () => {
-  const tip = document.getElementById('haina-tip-marimi').value;
-  document.getElementById('haina-marimi-custom-row').style.display = tip === 'numeric' ? '' : 'none';
+  const tip=document.getElementById('haina-tip-marimi').value;
+  document.getElementById('haina-marimi-custom-row').style.display=tip==='numeric'?'':'none';
 };
 
 window.adaugaHaina = async () => {
-  const name = document.getElementById('haina-name').value.trim().toUpperCase();
-  const tip = document.getElementById('haina-tip-marimi').value;
-  if (!name) { showToast('Introduceți un nume!', true); return; }
-  const existing = Object.values(stocData).find(h => h.denumire === name);
-  if (existing) { showToast('Articolul există deja!', true); return; }
-
-  let docData = { denumire: name, creatLa: serverTimestamp() };
-
-  if (tip === 'fara') {
-    docData.cantitate = 0;
-    docData.tipMarimi = 'fara';
-  } else if (tip === 'numeric') {
-    const marimiRaw = document.getElementById('haina-marimi-custom').value;
-    const marimiList = marimiRaw.split(',').map(m => m.trim()).filter(m => m !== '');
-    if (marimiList.length === 0) { showToast('Introdu cel puțin o mărime!', true); return; }
-    const marimi = {};
-    marimiList.forEach(m => marimi[m] = 0);
-    docData.marimi = marimi;
-    docData.tipMarimi = 'numeric';
-    docData.marimiOrdine = marimiList; // păstrăm ordinea
+  const name=document.getElementById('haina-name').value.trim().toUpperCase();
+  const tip=document.getElementById('haina-tip-marimi').value;
+  if (!name){showToast('Introduceți un nume!',true);return;}
+  if (Object.values(stocData).find(h=>h.denumire===name)){showToast('Articolul există deja!',true);return;}
+  let docData={denumire:name,creatLa:serverTimestamp()};
+  if (tip==='fara'){docData.cantitate=0;docData.tipMarimi='fara';}
+  else if (tip==='numeric'){
+    const ml=document.getElementById('haina-marimi-custom').value.split(',').map(m=>m.trim()).filter(m=>m);
+    if (!ml.length){showToast('Introdu cel puțin o mărime!',true);return;}
+    const marimi={};ml.forEach(m=>marimi[m]=0);
+    docData.marimi=marimi;docData.tipMarimi='numeric';docData.marimiOrdine=ml;
   } else {
-    const marimi = {};
-    MARIMI.forEach(m => marimi[m] = 0);
-    docData.marimi = marimi;
-    docData.tipMarimi = 'standard';
+    const marimi={};MARIMI.forEach(m=>marimi[m]=0);docData.marimi=marimi;docData.tipMarimi='standard';
   }
-
-  await addDoc(collection(db, 'stoc'), docData);
+  await addDoc(collection(db,'stoc'),docData);
   closeModal('modal-add-haina');
-  document.getElementById('haina-name').value = '';
-  document.getElementById('haina-marimi-custom').value = '';
-  document.getElementById('haina-tip-marimi').value = 'standard';
-  document.getElementById('haina-marimi-custom-row').style.display = 'none';
+  document.getElementById('haina-name').value='';
+  document.getElementById('haina-marimi-custom').value='';
+  document.getElementById('haina-tip-marimi').value='standard';
+  document.getElementById('haina-marimi-custom-row').style.display='none';
   showToast(`Articol "${name}" creat!`);
 };
 
-// =============================================
-// STERGE HAINA
-// =============================================
-window.stergeHaina = async (id, denumire) => {
-  if (!confirm(`Ștergi articolul "${denumire}" din stoc?\nATENȚIE: Aceasta nu șterge istoricul de distribuiri.`)) return;
-  await deleteDoc(doc(db, 'stoc', id));
-  showToast(`Articol "${denumire}" șters.`);
+window.stergeHaina = async (id,denumire) => {
+  if (!confirm(`Ștergi "${denumire}"?`)) return;
+  await deleteDoc(doc(db,'stoc',id));
+  showToast(`"${denumire}" șters.`);
 };
 
-// =============================================
-// USERS (Admin)
-// =============================================
-async function loadUsers() {
-  if (currentRole !== 'admin') return;
-  const ops = [
-    { id: 'operator1', nume: 'Cristi' },
-    { id: 'operator2', nume: 'Mihaela' },
-    { id: 'operator3', nume: 'Raluca' },
-  ];
-  // Ascultă în timp real statusul fiecărui operator
-  ops.forEach(op => {
-    onSnapshot(doc(db, 'force_logout', op.id), (snap) => {
-      const statusEl = document.getElementById(`op-status-${op.id}`);
-      if (!statusEl) return;
-      if (snap.exists() && snap.data().logout === true) {
-        const dt = snap.data().timestamp?.toDate();
-        const ora = dt ? dt.toLocaleTimeString('ro-RO', {hour:'2-digit',minute:'2-digit'}) : '';
-        statusEl.textContent = `⏳ Deconectare în așteptare (din ${ora})`;
-        statusEl.style.color = 'var(--red)';
-      } else {
-        statusEl.textContent = '✅ Activ';
-        statusEl.style.color = 'var(--green)';
-      }
-    });
-  });
-}
-
-function renderMarimiAdmin() {
-  const div = document.getElementById('marimi-list');
-  if (!div) return;
-  div.innerHTML = MARIMI.map(m => `<span class="badge-size" style="font-size:14px;padding:6px 14px;">${m}</span>`).join('');
-}
-
-// =============================================
-// SEED DATE DIN EXCEL
-// =============================================
-window.seedData = async () => {
-  // Verifică dacă stocul e deja importat
-  const existingSnap = await getDocs(collection(db, 'stoc'));
-  if (!existingSnap.empty) {
-    showToast(`Stocul are deja ${existingSnap.size} articole! Șterge-le mai întâi dacă vrei reimport.`, true);
-    return;
-  }
-
-  if (!confirm('Importă datele din Excel în Firebase?\nApasă OK pentru a continua.')) return;
-
-  const batch = writeBatch(db);
-
-  // Stocuri exacte din coloana "STOC ACTUAL" din Excel
-  const haineInitiale = [
-    { denumire: 'PANTALONI SCURTI',  marimi: { XS: 0,  S: 0,  M: 0,  L: 13, XL: 8  } },
-    { denumire: 'PANTALONI LUNGI',   marimi: { XS: 0,  S: 0,  M: 0,  L: 0,  XL: 0  } },
-    { denumire: 'PANTALONI TRENING', marimi: { XS: 10, S: 1,  M: 0,  L: 13, XL: 13 } },
-    { denumire: 'TRICOU',            marimi: { XS: 9,  S: 8,  M: 4,  L: 7,  XL: 1  } },
-    { denumire: 'BLUZA',             marimi: { XS: 0,  S: 13, M: 3,  L: 9,  XL: 5  } },
-    { denumire: 'BLUZA FERMOAR',     marimi: { XS: 0,  S: 0,  M: 5,  L: 0,  XL: 0  } },
-    { denumire: 'JACHETA PLOAIE',    marimi: { XS: 0,  S: 8,  M: 5,  L: 6,  XL: 4  } },
-    { denumire: 'JACHETA',           marimi: { XS: 0,  S: 27, M: 17, L: 8,  XL: 10 } },
-    { denumire: 'SAPCA',             cantitate: 0  },
-    { denumire: 'CACIULA',           cantitate: 5  },
-  ];
-
-  haineInitiale.forEach(h => {
-    const ref = doc(collection(db, 'stoc'));
-    batch.set(ref, { ...h, creatLa: serverTimestamp() });
-  });
-
-  // Toți angajații din Excel (50 persoane)
-  const angajatiInitiali = [
-    'Andrei Alex','Bainoczi Ravan','Bitiusca Gabriel','Bisoc Ionut','Bruma Nicolae',
-    'Burlacu','Buciu Petre','Cazan Ionut','Ciobotaru Adrian','Ciobotaru Larisa',
-    'Crainic Adrian','Crainic Gabriel','Dima Dobinda','Dobinda Dumitru','Dutescu Daniel',
-    'Eftodii Andrei','Farkas Rudolf','Ferent Simon','Feraru Razvan','Iacob Mihai',
-    'Lica Madalin','Macarie Paul','Maicosul Adelin','Maies Antonio','Margau Rafael',
-    'Mereacre Mihail','Mihai Adrian','Moise Alexandru','Morosanu Lucian','Musteata Ioan',
-    'Nadia','Necula Marius','Plesca Mihai','Pop Marcel','Radu PS',
-    'Raghinaru Marian','Razvan Bainoczi','Roman Marinel','Rudareanu Vladut','Serban Florin',
-    'Sparios Eduard','Stan Flori','Stan Ionel','Stanciu Anastasia','Stanciu Dumitru',
-    'Stinga Valeriu','Tania','Toth Cristina','Tufeanu Claudia','Zestrea Mihail',
-  ];
-
-  angajatiInitiali.forEach(nume => {
-    const ref = doc(collection(db, 'angajati'));
-    batch.set(ref, { nume, departament: '', creatLa: serverTimestamp() });
-  });
-
-  await batch.commit();
-  showToast('✅ Date importate cu succes! 10 articole + 50 angajați.');
-};
-
-// =============================================
-// CURĂȚĂ ISTORIC
-// =============================================
 // =============================================
 // RAPORT PERSOANE
 // =============================================
 function populateRaportFilter() {
-  const sel = document.getElementById('raport-filter-angajat');
+  const sel=document.getElementById('raport-filter-angajat');
   if (!sel) return;
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">Toți angajații</option>' +
-    angajatiData.map(a => `<option value="${a.id}" ${a.id === cur ? 'selected' : ''}>${a.nume}</option>`).join('');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Toți angajații</option>'+angajatiData.map(a=>`<option value="${a.id}"${a.id===cur?' selected':''}>${a.nume}</option>`).join('');
 }
 
 window.renderRaport = () => {
-  const div = document.getElementById('raport-content');
+  const div=document.getElementById('raport-content');
   if (!div) return;
-  const filterId = document.getElementById('raport-filter-angajat')?.value || '';
-
-  // Grupează istoricul după angajat
-  const grupate = {};
-  istoricData.forEach(r => {
-    if (filterId && r.angajatId !== filterId) return;
-    const key = r.angajatId || r.angajatNume;
-    if (!grupate[key]) grupate[key] = { nume: r.angajatNume, items: [] };
+  const filterId=document.getElementById('raport-filter-angajat')?.value||'';
+  const grupate={};
+  istoricData.forEach(r=>{
+    if (filterId&&r.angajatId!==filterId) return;
+    const key=r.angajatId||r.angajatNume;
+    if (!grupate[key]) grupate[key]={nume:r.angajatNume,items:[]};
     grupate[key].items.push(r);
   });
-
-  const angajatiSortati = Object.values(grupate).sort((a, b) => a.nume.localeCompare(b.nume));
-
-  if (angajatiSortati.length === 0) {
-    div.innerHTML = '<div class="loading">Nicio distribuire înregistrată.</div>';
-    return;
-  }
-
-  div.innerHTML = angajatiSortati.map(ang => {
-    // Grupează itemele pe articol+marime
-    const rezumat = {};
-    let totalBuc = 0;
-    ang.items.forEach(item => {
-      const cheie = `${item.hainaDenumire}||${item.marime}`;
-      if (!rezumat[cheie]) rezumat[cheie] = { haina: item.hainaDenumire, marime: item.marime, cantitate: 0 };
-      rezumat[cheie].cantitate += (item.cantitate || 1);
-      totalBuc += (item.cantitate || 1);
+  const sortati=Object.values(grupate).sort((a,b)=>a.nume.localeCompare(b.nume));
+  if (!sortati.length){div.innerHTML='<div class="loading">Nicio distribuire înregistrată.</div>';return;}
+  div.innerHTML=sortati.map(ang=>{
+    const rezumat={};let totalBuc=0;
+    ang.items.forEach(item=>{
+      const k=`${item.hainaDenumire}||${item.marime}`;
+      if (!rezumat[k]) rezumat[k]={haina:item.hainaDenumire,marime:item.marime,cantitate:0};
+      rezumat[k].cantitate+=(item.cantitate||1);totalBuc+=(item.cantitate||1);
     });
-
-    const randuri = Object.values(rezumat)
-      .sort((a, b) => a.haina.localeCompare(b.haina))
-      .map(r => {
-        const marime = r.marime && r.marime !== '—'
-          ? `<span class="badge-size">${r.marime}</span>`
-          : '<span style="color:var(--muted)">—</span>';
-        return `<tr>
-          <td style="font-weight:500;">${r.haina}</td>
-          <td>${marime}</td>
-          <td><span class="qty-tag">${r.cantitate}</span></td>
-        </tr>`;
-      }).join('');
-
+    const randuri=Object.values(rezumat).sort((a,b)=>a.haina.localeCompare(b.haina)).map(r=>{
+      const m=r.marime&&r.marime!=='—'?`<span class="badge-size">${r.marime}</span>`:'<span style="color:var(--muted)">—</span>';
+      return `<tr><td style="font-weight:500;">${r.haina}</td><td>${m}</td><td><span class="qty-tag">${r.cantitate}</span></td></tr>`;
+    }).join('');
     return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:12px;overflow:hidden;">
       <div style="background:var(--surface2);padding:12px 18px;display:flex;justify-content:space-between;align-items:center;">
         <div style="font-family:var(--font-display);font-size:20px;letter-spacing:2px;">${ang.nume}</div>
         <div style="font-family:var(--font-mono);font-size:12px;color:var(--accent);">TOTAL: ${totalBuc} buc · ${ang.items.length} distribuiri</div>
       </div>
       <table style="width:100%;border-collapse:collapse;">
-        <thead>
-          <tr style="background:#111;">
-            <th style="padding:8px 18px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Articol</th>
-            <th style="padding:8px 18px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Mărime</th>
-            <th style="padding:8px 18px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Cantitate</th>
-          </tr>
-        </thead>
+        <thead><tr style="background:#111;">
+          <th style="padding:8px 18px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Articol</th>
+          <th style="padding:8px 18px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Mărime</th>
+          <th style="padding:8px 18px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Cantitate</th>
+        </tr></thead>
         <tbody>${randuri}</tbody>
       </table>
     </div>`;
@@ -2161,82 +1197,125 @@ window.renderRaport = () => {
 };
 
 window.exportCSVRaport = () => {
-  const filterId = document.getElementById('raport-filter-angajat')?.value || '';
-  const rows = [['Angajat', 'Articol', 'Marime', 'Cantitate']];
-  const grupate = {};
-  istoricData.forEach(r => {
-    if (filterId && r.angajatId !== filterId) return;
-    const key = `${r.angajatId}||${r.hainaDenumire}||${r.marime}`;
-    if (!grupate[key]) grupate[key] = { nume: r.angajatNume, haina: r.hainaDenumire, marime: r.marime, cantitate: 0 };
-    grupate[key].cantitate += (r.cantitate || 1);
+  const filterId=document.getElementById('raport-filter-angajat')?.value||'';
+  const rows=[['Angajat','Articol','Marime','Cantitate']];
+  const grupate={};
+  istoricData.forEach(r=>{
+    if (filterId&&r.angajatId!==filterId) return;
+    const k=`${r.angajatId}||${r.hainaDenumire}||${r.marime}`;
+    if (!grupate[k]) grupate[k]={nume:r.angajatNume,haina:r.hainaDenumire,marime:r.marime,cantitate:0};
+    grupate[k].cantitate+=(r.cantitate||1);
   });
-  Object.values(grupate)
-    .sort((a, b) => a.nume.localeCompare(b.nume))
-    .forEach(r => rows.push([r.nume, r.haina, r.marime, r.cantitate]));
-  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `raport_persoane_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
+  Object.values(grupate).sort((a,b)=>a.nume.localeCompare(b.nume)).forEach(r=>rows.push([r.nume,r.haina,r.marime,r.cantitate]));
+  downloadCSV(rows,'raport_persoane');
 };
 
+// =============================================
+// ADMIN — OPERATORI
+// =============================================
+function loadUsers() {
+  if (currentRole!=='admin') return;
+  const ops=['operator1','operator2','operator3'];
+  ops.forEach(opId=>{
+    onSnapshot(doc(db,'force_logout',opId),snap=>{
+      const el=document.getElementById(`op-status-${opId}`);
+      if (!el) return;
+      if (snap.exists()&&snap.data().logout===true){
+        const dt=snap.data().timestamp?.toDate();
+        const ora=dt?dt.toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'}):'';
+        el.textContent=`⏳ Deconectare în așteptare (${ora})`;el.style.color='var(--red)';
+      } else {el.textContent='✅ Activ';el.style.color='var(--green)';}
+    });
+  });
+}
+
+window.forceLogoutOperator = async (opId,opName) => {
+  if (!confirm(`Deconectezi "${opName}"?`)) return;
+  await setDoc(doc(db,'force_logout',opId),{logout:true,timestamp:serverTimestamp()});
+  showToast(`"${opName}" va fi deconectat instant.`);
+};
+
+// =============================================
+// CURĂȚĂ ISTORIC
+// =============================================
 window.curatistoric = async (tip) => {
-  const mesaje = {
-    istoric:  'Ștergi TOT istoricul distribuirilor?\nAceastă acțiune nu poate fi anulată!',
-    adaugari: 'Ștergi TOT istoricul adăugărilor și corecțiilor?\nAceastă acțiune nu poate fi anulată!',
-    tot:      'Ștergi TOT istoricul (distribuiri + adăugări + corecții)?\nAceastă acțiune nu poate fi anulată!',
+  const mesaje={
+    istoric:'Ștergi TOT istoricul distribuirilor?\nNu poate fi anulat!',
+    adaugari:'Ștergi TOT istoricul adăugărilor?\nNu poate fi anulat!',
+    tot:'Ștergi TOT istoricul?\nNu poate fi anulat!'
   };
   if (!confirm(mesaje[tip])) return;
-
-  const colectii = tip === 'tot' ? ['istoric', 'adaugari'] : [tip];
-  let total = 0;
-
-  for (const col of colectii) {
-    const snap = await getDocs(collection(db, col));
+  const colectii=tip==='tot'?['istoric','adaugari']:[tip];
+  let total=0;
+  for (const col of colectii){
+    const snap=await getDocs(collection(db,col));
     if (snap.empty) continue;
-    // Împarte în batches de maxim 400 documente
-    const docs = snap.docs;
-    for (let i = 0; i < docs.length; i += 400) {
-      const batch = writeBatch(db);
-      docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+    for (let i=0;i<snap.docs.length;i+=400){
+      const batch=writeBatch(db);
+      snap.docs.slice(i,i+400).forEach(d=>batch.delete(d.ref));
       await batch.commit();
     }
-    total += docs.length;
+    total+=snap.docs.length;
   }
-
   showToast(`✅ ${total} înregistrări șterse.`);
 };
 
-window.showSection = (id, tab) => {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('section-' + id)?.classList.add('active');
+// =============================================
+// SEED DATE
+// =============================================
+window.seedData = async () => {
+  const ex=await getDocs(collection(db,'stoc'));
+  if (!ex.empty){showToast(`Stocul are deja ${ex.size} articole!`,true);return;}
+  if (!confirm('Importă datele din Excel?')) return;
+  const batch=writeBatch(db);
+  [
+    {denumire:'PANTALONI SCURTI',marimi:{XS:0,S:0,M:0,L:13,XL:8},tipMarimi:'standard'},
+    {denumire:'PANTALONI LUNGI',marimi:{XS:0,S:0,M:0,L:0,XL:0},tipMarimi:'standard'},
+    {denumire:'PANTALONI TRENING',marimi:{XS:10,S:1,M:0,L:13,XL:13},tipMarimi:'standard'},
+    {denumire:'TRICOU',marimi:{XS:9,S:8,M:4,L:7,XL:1},tipMarimi:'standard'},
+    {denumire:'BLUZA',marimi:{XS:0,S:13,M:3,L:9,XL:5},tipMarimi:'standard'},
+    {denumire:'BLUZA FERMOAR',marimi:{XS:0,S:0,M:5,L:0,XL:0},tipMarimi:'standard'},
+    {denumire:'JACHETA PLOAIE',marimi:{XS:0,S:8,M:5,L:6,XL:4},tipMarimi:'standard'},
+    {denumire:'JACHETA',marimi:{XS:0,S:27,M:17,L:8,XL:10},tipMarimi:'standard'},
+    {denumire:'SAPCA',cantitate:0,tipMarimi:'fara'},
+    {denumire:'CACIULA',cantitate:5,tipMarimi:'fara'},
+  ].forEach(h=>batch.set(doc(collection(db,'stoc')),{...h,creatLa:serverTimestamp()}));
+  ['Andrei Alex','Bainoczi Ravan','Bitiusca Gabriel','Bisoc Ionut','Bruma Nicolae','Burlacu','Buciu Petre','Cazan Ionut','Ciobotaru Adrian','Ciobotaru Larisa','Crainic Adrian','Crainic Gabriel','Dima Dobinda','Dobinda Dumitru','Dutescu Daniel','Eftodii Andrei','Farkas Rudolf','Ferent Simon','Feraru Razvan','Iacob Mihai','Lica Madalin','Macarie Paul','Maicosul Adelin','Maies Antonio','Margau Rafael','Mereacre Mihail','Mihai Adrian','Moise Alexandru','Morosanu Lucian','Musteata Ioan','Nadia','Necula Marius','Plesca Mihai','Pop Marcel','Radu PS','Raghinaru Marian','Razvan Bainoczi','Roman Marinel','Rudareanu Vladut','Serban Florin','Sparios Eduard','Stan Flori','Stan Ionel','Stanciu Anastasia','Stanciu Dumitru','Stinga Valeriu','Tania','Toth Cristina','Tufeanu Claudia','Zestrea Mihail']
+    .forEach(n=>batch.set(doc(collection(db,'angajati')),{nume:n,departament:'',creatLa:serverTimestamp()}));
+  await batch.commit();
+  showToast('✅ 10 articole + 50 angajați importați!');
+};
+
+// =============================================
+// UI HELPERS
+// =============================================
+window.showSection = (id,tab) => {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('section-'+id)?.classList.add('active');
   tab?.classList.add('active');
-  if (id === 'distribuire') loadRecentDistribuiri();
-  if (id === 'adaugari') renderAdaugari();
-  if (id === 'raport') { populateRaportFilter(); renderRaport(); }
+  if (id==='distribuire') loadRecentDistribuiri();
+  if (id==='adaugari') window.renderAdaugari();
+  if (id==='raport'){populateRaportFilter();window.renderRaport();}
 };
 
-window.openModal = (id) => {
-  document.getElementById(id)?.classList.add('open');
-};
-window.closeModal = (id) => {
-  document.getElementById(id)?.classList.remove('open');
-};
+window.openModal = id => document.getElementById(id)?.classList.add('open');
+window.closeModal = id => document.getElementById(id)?.classList.remove('open');
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 
-// Close modal on overlay click
-document.querySelectorAll('.modal-overlay').forEach(o => {
-  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
-});
-
-function showToast(msg, isError = false) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'show' + (isError ? ' error' : '');
-  setTimeout(() => t.className = '', 3000);
+function showToast(msg,isError=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='show'+(isError?' error':'');
+  setTimeout(()=>t.className='',3000);
 }
-window.showToast = showToast;
+window.showToast=showToast;
+
+function downloadCSV(rows,filename){
+  const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download=`${filename}_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+}
 
 </script>
 </body>
