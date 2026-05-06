@@ -521,6 +521,29 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
 
 <div id="toast"></div>
 
+<script>
+// Proxy pentru funcțiile din module — onclick-urile din HTML le apelează înainte ca modulul să se încarce
+// Acest script creează stub-uri care așteaptă până funcțiile sunt disponibile
+const _fnQueue = {};
+function _makeProxy(name) {
+  window[name] = function(...args) {
+    if (window['_real_' + name]) return window['_real_' + name](...args);
+    // Funcția nu e încă încărcată — încearcă din nou după 100ms
+    setTimeout(() => { if (window['_real_' + name]) window['_real_' + name](...args); }, 100);
+  };
+}
+['toggleAdminLogin','doAdminLogin','doLogout','doOperatorLogin','openModal','closeModal','showSection',
+ 'clearAngajatSearch','showAngajatiDropdown','filterAngajatiDropdown','selectAngajat',
+ 'distribuieHaine','adaugaAngajat','stergeAngajat','editeazaAngajat','salveazaAngajat',
+ 'adaugaStoc','adaugaHaina','stergeHaina','corecteazaStoc','updateStocModalMarime',
+ 'updateCorectareMarime','updateCorectareStocCurent','updateHainaMarimiInput','updateSizeOptions',
+ 'showStocScazut','filterIstoric','renderAdaugari','renderAngajati','renderRaport',
+ 'exportCSV','exportCSVAdaugari','exportCSVRaport',
+ 'faBBackupManual','incarcaListaBackupuri','restaureazaStocDinFirebase','restaureazaDinFisier',
+ 'forceLogoutOperator','seedData','stergeDistribuire','stergeAdaugare'
+].forEach(_makeProxy);
+</script>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -1660,6 +1683,18 @@ function downloadCSV(rows,filename){
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
   a.download=`${filename}_${new Date().toISOString().slice(0,10)}.csv`;a.click();
 }
+
+// Înregistrează funcțiile reale pentru proxy-urile din scriptul non-module
+['toggleAdminLogin','doAdminLogin','doLogout','doOperatorLogin','openModal','closeModal','showSection',
+ 'clearAngajatSearch','showAngajatiDropdown','filterAngajatiDropdown','selectAngajat',
+ 'distribuieHaine','adaugaAngajat','stergeAngajat','editeazaAngajat','salveazaAngajat',
+ 'adaugaStoc','adaugaHaina','stergeHaina','corecteazaStoc','updateStocModalMarime',
+ 'updateCorectareMarime','updateCorectareStocCurent','updateHainaMarimiInput','updateSizeOptions',
+ 'showStocScazut','filterIstoric','renderAdaugari','renderAngajati','renderRaport',
+ 'exportCSV','exportCSVAdaugari','exportCSVRaport',
+ 'faBBackupManual','incarcaListaBackupuri','restaureazaStocDinFirebase','restaureazaDinFisier',
+ 'forceLogoutOperator','seedData','stergeDistribuire','stergeAdaugare','showToast'
+].forEach(name => { if (window[name]) window['_real_' + name] = window[name]; });
 
 </script>
 </body>
