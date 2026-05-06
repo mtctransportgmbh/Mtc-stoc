@@ -1614,43 +1614,6 @@ window.restaureazaDinFisier = async (event) => {
   } catch(e) { showToast('Eroare: ' + e.message, true); }
 };
 
-async function faceBackupAutomat(motiv) {
-  try {
-    const snapshot = Object.values(stocData).map(h => ({
-      id: h.id,
-      denumire: h.denumire,
-      tipMarimi: h.tipMarimi || 'standard',
-      marimi: h.marimi || null,
-      marimiOrdine: h.marimiOrdine || null,
-      cantitate: h.cantitate || null,
-    }));
-    const backupDoc = {
-      stoc: snapshot,
-      motiv: motiv || 'automat',
-      operator: currentOperatorName || '—',
-      data: serverTimestamp(),
-      nrArticole: snapshot.length,
-      totalBucati: snapshot.reduce((s, h) => {
-        if (estefaraMarimi(h)) return s + (h.cantitate || 0);
-        return s + Object.values(h.marimi || {}).reduce((ss, v) => ss + v, 0);
-      }, 0),
-    };
-    await addDoc(collection(db, 'backups'), backupDoc);
-    // Păstrează doar ultimele 10 backup-uri
-    const snap = await getDocs(query(collection(db, 'backups'), orderBy('data', 'asc')));
-    if (snap.size > 10) {
-      const toDelete = snap.docs.slice(0, snap.size - 10);
-      const batch = writeBatch(db);
-      toDelete.forEach(d => batch.delete(d.ref));
-      await batch.commit();
-    }
-    updateBackupInfo();
-  } catch(e) {
-    console.warn('Backup automat eșuat:', e);
-  }
-}
-
-
 // =============================================
 // UI HELPERS
 // =============================================
