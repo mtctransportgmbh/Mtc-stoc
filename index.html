@@ -812,8 +812,9 @@ function loadAngajati() {
   });
 }
 
-function renderAngajati() {
+window.renderAngajati = function() {
   const grid = document.getElementById('angajati-grid');
+  if (!grid) return;
   const search = (document.getElementById('search-angajati')?.value||'').toLowerCase();
   const filtered = angajatiData.filter(a=>a.nume.toLowerCase().includes(search));
   if (!filtered.length) { grid.innerHTML='<div class="loading">Niciun angajat găsit.</div>'; return; }
@@ -1341,18 +1342,15 @@ window.stergeDistribuire = async (id) => {
   const {hainaId, hainaDenumire, marime, cantitate} = inreg;
   const fara = !marime || marime === '—';
   if (!confirm(`Ștergi distribuirea:\n${hainaDenumire}${fara?'':' '+marime} · ${cantitate} buc → ${inreg.angajatNume}?\n\nStocul va reveni cu +${cantitate} bucăți.`)) return;
-
-  const batch = writeBatch(db);
-  // Șterge înregistrarea
-  batch.delete(doc(db, 'istoric', id));
-  // Revine stocul
-  if (hainaId) {
-    if (fara) batch.update(doc(db,'stoc',hainaId), {cantitate: increment(cantitate)});
-    else batch.update(doc(db,'stoc',hainaId), {[`marimi.${marime}`]: increment(cantitate)});
-  }
-  await batch.commit();
-  faceBackupAutomat(`ștergere distribuire ${hainaDenumire} → ${inreg.angajatNume}`);
-  showToast(`✅ Distribuire ștearsă. Stoc +${cantitate} ${hainaDenumire}${fara?'':' '+marime}`);
+  try {
+    await deleteDoc(doc(db, 'istoric', id));
+    if (hainaId) {
+      if (fara) await updateDoc(doc(db,'stoc',hainaId), {cantitate: increment(cantitate)});
+      else await updateDoc(doc(db,'stoc',hainaId), {[`marimi.${marime}`]: increment(cantitate)});
+    }
+    faceBackupAutomat(`ștergere distribuire ${hainaDenumire} → ${inreg.angajatNume}`);
+    showToast(`✅ Distribuire ștearsă. Stoc +${cantitate} ${hainaDenumire}${fara?'':' '+marime}`);
+  } catch(e) { showToast('Eroare: ' + e.message, true); }
 };
 
 window.stergeAdaugare = async (id) => {
@@ -1361,19 +1359,17 @@ window.stergeAdaugare = async (id) => {
   const {hainaId, hainaDenumire, marime, cantitate, observatii} = inreg;
   const fara = !marime || marime === '—';
   const esCor = (observatii||'').startsWith('CORECȚIE:');
-  const desc = esCor ? `corecția ${observatii}` : `adăugarea de +${cantitate} ${hainaDenumire}${fara?'':' '+marime}`;
+  const desc = esCor ? `corecția` : `adăugarea de +${cantitate} ${hainaDenumire}${fara?'':' '+marime}`;
   if (!confirm(`Ștergi ${desc}?\n\nStocul va fi ajustat cu ${-cantitate} bucăți.`)) return;
-
-  const batch = writeBatch(db);
-  batch.delete(doc(db, 'adaugari', id));
-  // Inversează efectul — scade ce fusese adăugat
-  if (hainaId) {
-    if (fara) batch.update(doc(db,'stoc',hainaId), {cantitate: increment(-cantitate)});
-    else batch.update(doc(db,'stoc',hainaId), {[`marimi.${marime}`]: increment(-cantitate)});
-  }
-  await batch.commit();
-  faceBackupAutomat(`ștergere adăugare ${hainaDenumire}`);
-  showToast(`✅ Înregistrare ștearsă. Stoc ajustat cu ${cantitate > 0 ? '-' : '+'}${Math.abs(cantitate)}.`);
+  try {
+    await deleteDoc(doc(db, 'adaugari', id));
+    if (hainaId) {
+      if (fara) await updateDoc(doc(db,'stoc',hainaId), {cantitate: increment(-cantitate)});
+      else await updateDoc(doc(db,'stoc',hainaId), {[`marimi.${marime}`]: increment(-cantitate)});
+    }
+    faceBackupAutomat(`ștergere adăugare ${hainaDenumire}`);
+    showToast(`✅ Înregistrare ștearsă. Stoc ajustat cu ${cantitate > 0 ? '-' : '+'}${Math.abs(cantitate)}.`);
+  } catch(e) { showToast('Eroare: ' + e.message, true); }
 };
 
 // =============================================
@@ -1406,7 +1402,194 @@ window.seedData = async () => {
 // SISTEM BACKUP
 // =============================================
 
+// Backup automat în Firebase (doar stocul, pentru restaurare rapidă)
 async function faceBackupAutomat(motiv) {
+  try {
+    const snapshot = Object.values(stocData).map(h => ({
+      id: h.id, denumire: h.denumire, tipMarimi: h.tipMarimi || 'standard',
+      marimi: h.marimi || null, marimiOrdine: h.marimiOrdine || null, cantitate: h.cantitate ?? null,
+    }));
+    const totalBucati = snapshot.reduce((s, h) => {
+      if (estefaraMarimi(h)) return s + (h.cantitate || 0);
+      return s + Object.values(h.marimi || {}).reduce((ss, v) => ss + v, 0);
+    }, 0);
+    await addDoc(collection(db, 'backups'), {
+      stoc: snapshot, motiv: motiv || 'automat',
+      operator: currentOperatorName || '—',
+      data: serverTimestamp(),
+      nrArticole: snapshot.length, totalBucati,
+    });
+    // Păstrează ultimele 10
+    const snap = await getDocs(query(collection(db, 'backups'), orderBy('data', 'asc')));
+    if (snap.size > 10) {
+      for (const d of snap.docs.slice(0, snap.size - 10)) {
+        await deleteDoc(d.ref);
+      }
+    }
+    updateBackupInfo();
+  } catch(e) { console.warn('Backup automat eșuat:', e); }
+}
+
+async function updateBackupInfo() {
+  try {
+    const snap = await getDocs(query(collection(db, 'backups'), orderBy('data', 'desc'), limit(1)));
+    const el = document.getElementById('backup-last-info');
+    if (!el) return;
+    if (snap.empty) {
+      el.textContent = 'Niciun backup salvat încă'; el.style.color = 'var(--muted)';
+    } else {
+      const d = snap.docs[0].data();
+      const dt = d.data?.toDate ? d.data.toDate() : new Date();
+      const data = dt.toLocaleDateString('ro-RO', {day:'2-digit',month:'2-digit',year:'numeric'});
+      const ora = dt.toLocaleTimeString('ro-RO', {hour:'2-digit',minute:'2-digit'});
+      el.textContent = `${data} ora ${ora} · ${d.motiv} · ${d.nrArticole} articole`;
+      el.style.color = 'var(--green)';
+    }
+  } catch(e) { const el=document.getElementById('backup-last-info'); if(el) el.textContent='Nu s-a putut verifica'; }
+}
+
+// Backup complet pe PC: stoc + istoric + adăugări
+window.faBBackupManual = async () => {
+  showToast('Se pregătește backup-ul complet...');
+  try {
+    // Citește toate datele din Firebase
+    const [stocSnap, istoricSnap, adaugariSnap] = await Promise.all([
+      getDocs(collection(db, 'stoc')),
+      getDocs(query(collection(db, 'istoric'), orderBy('data', 'desc'))),
+      getDocs(query(collection(db, 'adaugari'), orderBy('data', 'desc'))),
+    ]);
+
+    const backup = {
+      versiune: '1.0',
+      dataBackup: new Date().toISOString(),
+      operator: currentOperatorName,
+      stoc: stocSnap.docs.map(d => ({ id: d.id, ...d.data(), data: d.data().creatLa?.toDate?.()?.toISOString() || null, creatLa: undefined })),
+      istoric: istoricSnap.docs.map(d => ({ id: d.id, ...d.data(), data: d.data().data?.toDate?.()?.toISOString() || null })),
+      adaugari: adaugariSnap.docs.map(d => ({ id: d.id, ...d.data(), data: d.data().data?.toDate?.()?.toISOString() || null })),
+    };
+
+    const dt = new Date();
+    const filename = `backup_MTC_${dt.getFullYear()}${String(dt.getMonth()+1).padStart(2,'0')}${String(dt.getDate()).padStart(2,'0')}_${String(dt.getHours()).padStart(2,'0')}${String(dt.getMinutes()).padStart(2,'0')}.json`;
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+
+    // Salvează și în Firebase
+    await faceBackupAutomat('backup manual complet');
+    showToast(`✅ Backup salvat: ${filename}`);
+  } catch(e) { showToast('Eroare backup: ' + e.message, true); }
+};
+
+// Lista backup-uri din Firebase
+window.incarcaListaBackupuri = async () => {
+  const div = document.getElementById('backup-lista');
+  try {
+    const snap = await getDocs(query(collection(db, 'backups'), orderBy('data', 'desc')));
+    if (snap.empty) {
+      div.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center;">Niciun backup în Firebase. Folosește backup manual.</div>';
+      return;
+    }
+    div.innerHTML = snap.docs.map(d => {
+      const x = d.data();
+      const dt = x.data?.toDate ? x.data.toDate() : new Date();
+      const data = dt.toLocaleDateString('ro-RO', {day:'2-digit',month:'2-digit',year:'numeric'});
+      const ora = dt.toLocaleTimeString('ro-RO', {hour:'2-digit',minute:'2-digit'});
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);gap:10px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:13px;font-weight:500;">${data} ora ${ora}</div>
+          <div style="font-size:11px;color:var(--muted);">${x.motiv||'automat'} · ${x.nrArticole||0} articole · ${x.totalBucati||0} buc · 👤 ${x.operator||'—'}</div>
+        </div>
+        <button class="btn-danger" style="padding:6px 14px;font-size:12px;" onclick="restaureazaStocDinFirebase('${d.id}')">🔄 Restaurează stoc</button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    div.innerHTML = `<div style="color:var(--red);padding:20px;">Eroare: ${e.message}</div>`;
+  }
+};
+
+// Restaurare stoc din Firebase (doar stocul)
+window.restaureazaStocDinFirebase = async (backupId) => {
+  if (!confirm('⚠ Restaurezi stocul din acest backup Firebase?\n\nStocul CURENT va fi înlocuit.\nIstoricul distribuirilor rămâne neschimbat.')) return;
+  try {
+    showToast('Se restaurează stocul...');
+    const backupSnap = await getDoc(doc(db, 'backups', backupId));
+    if (!backupSnap.exists()) { showToast('Backup negăsit!', true); return; }
+    const stocBackup = backupSnap.data().stoc || [];
+    const stocSnap = await getDocs(collection(db, 'stoc'));
+    for (const d of stocSnap.docs) await deleteDoc(d.ref);
+    for (const h of stocBackup) {
+      const docData = { denumire: h.denumire, tipMarimi: h.tipMarimi || 'standard' };
+      if (h.marimi) docData.marimi = h.marimi;
+      if (h.marimiOrdine) docData.marimiOrdine = h.marimiOrdine;
+      if (h.cantitate !== null && h.cantitate !== undefined) docData.cantitate = h.cantitate;
+      await setDoc(doc(db, 'stoc', h.id), docData);
+    }
+    closeModal('modal-restaurare-backup');
+    showToast('✅ Stoc restaurat din Firebase!');
+  } catch(e) { showToast('Eroare: ' + e.message, true); }
+};
+
+// Restaurare completă din fișier JSON (stoc + opțional istoric)
+window.restaureazaDinFisier = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  try {
+    const text = await file.text();
+    const backup = JSON.parse(text);
+    if (!backup.stoc || !Array.isArray(backup.stoc)) { showToast('Fișier invalid — lipsește secțiunea stoc!', true); return; }
+
+    const areIstoric = Array.isArray(backup.istoric) && backup.istoric.length > 0;
+    const areAdaugari = Array.isArray(backup.adaugari) && backup.adaugari.length > 0;
+
+    const msg = `📁 Restaurezi din: ${file.name}\n\n` +
+      `• Stoc: ${backup.stoc.length} articole\n` +
+      `• Istoric distribuiri: ${backup.istoric?.length || 0} înregistrări\n` +
+      `• Adăugări stoc: ${backup.adaugari?.length || 0} înregistrări\n\n` +
+      `Stocul curent va fi ÎNLOCUIT.\nDatele din istoric/adăugări vor fi și ele înlocuite dacă există în backup.\n\nContinui?`;
+
+    if (!confirm(msg)) return;
+    showToast('Se restaurează din fișier...');
+
+    // Restaurează stoc
+    const stocSnap = await getDocs(collection(db, 'stoc'));
+    for (const d of stocSnap.docs) await deleteDoc(d.ref);
+    for (const h of backup.stoc) {
+      const docData = { denumire: h.denumire, tipMarimi: h.tipMarimi || 'standard' };
+      if (h.marimi) docData.marimi = h.marimi;
+      if (h.marimiOrdine) docData.marimiOrdine = h.marimiOrdine;
+      if (h.cantitate !== null && h.cantitate !== undefined) docData.cantitate = h.cantitate;
+      await setDoc(doc(db, 'stoc', h.id), docData);
+    }
+
+    // Restaurează istoric dacă există
+    if (areIstoric) {
+      const istoricSnap = await getDocs(collection(db, 'istoric'));
+      for (const d of istoricSnap.docs) await deleteDoc(d.ref);
+      for (const r of backup.istoric) {
+        const { id, data, ...rest } = r;
+        await setDoc(doc(db, 'istoric', id), { ...rest, data: data ? new Date(data) : serverTimestamp() });
+      }
+    }
+
+    // Restaurează adăugări dacă există
+    if (areAdaugari) {
+      const adaugariSnap = await getDocs(collection(db, 'adaugari'));
+      for (const d of adaugariSnap.docs) await deleteDoc(d.ref);
+      for (const r of backup.adaugari) {
+        const { id, data, ...rest } = r;
+        await setDoc(doc(db, 'adaugari', id), { ...rest, data: data ? new Date(data) : serverTimestamp() });
+      }
+    }
+
+    showToast(`✅ Restaurare completă din ${file.name}!`);
+  } catch(e) { showToast('Eroare: ' + e.message, true); }
+};
   try {
     const snapshot = Object.values(stocData).map(h => ({
       id: h.id,
@@ -1442,134 +1625,6 @@ async function faceBackupAutomat(motiv) {
   }
 }
 
-async function updateBackupInfo() {
-  try {
-    const snap = await getDocs(query(collection(db, 'backups'), orderBy('data', 'desc'), limit(1)));
-    const el = document.getElementById('backup-last-info');
-    if (!el) return;
-    if (snap.empty) {
-      el.textContent = 'Niciun backup salvat încă';
-      el.style.color = 'var(--muted)';
-    } else {
-      const d = snap.docs[0].data();
-      const dt = d.data?.toDate ? d.data.toDate() : new Date();
-      const data = dt.toLocaleDateString('ro-RO', {day:'2-digit',month:'2-digit',year:'numeric'});
-      const ora = dt.toLocaleTimeString('ro-RO', {hour:'2-digit',minute:'2-digit'});
-      el.textContent = `${data} ora ${ora} · ${d.motiv} · ${d.nrArticole} articole · ${d.totalBucati} buc`;
-      el.style.color = 'var(--green)';
-    }
-  } catch(e) {
-    const el = document.getElementById('backup-last-info');
-    if (el) el.textContent = 'Nu s-a putut verifica';
-  }
-}
-
-window.faBBackupManual = async () => {
-  showToast('Se face backup...');
-  await faceBackupAutomat('manual de ' + currentOperatorName);
-  showToast('✅ Backup salvat cu succes!');
-};
-
-window.incarcaListaBackupuri = async () => {
-  const div = document.getElementById('backup-lista');
-  try {
-    const snap = await getDocs(query(collection(db, 'backups'), orderBy('data', 'desc')));
-    if (snap.empty) {
-      div.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center;">Niciun backup disponibil.</div>';
-      return;
-    }
-    div.innerHTML = snap.docs.map(d => {
-      const x = d.data();
-      const dt = x.data?.toDate ? x.data.toDate() : new Date();
-      const data = dt.toLocaleDateString('ro-RO', {day:'2-digit',month:'2-digit',year:'numeric'});
-      const ora = dt.toLocaleTimeString('ro-RO', {hour:'2-digit',minute:'2-digit'});
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);gap:10px;">
-        <div>
-          <div style="font-size:13px;font-weight:500;">${data} ora ${ora}</div>
-          <div style="font-size:11px;color:var(--muted);">${x.motiv || 'automat'} · ${x.nrArticole || 0} articole · ${x.totalBucati || 0} buc · 👤 ${x.operator || '—'}</div>
-        </div>
-        <div style="display:flex;gap:6px;">
-          <button class="btn-secondary" style="padding:6px 12px;font-size:12px;white-space:nowrap;" onclick="descarcaBackup('${d.id}')">⬇ JSON</button>
-          <button class="btn-danger" style="padding:6px 12px;font-size:12px;white-space:nowrap;" onclick="restaureazaBackup('${d.id}')">🔄 Restaurează</button>
-        </div>
-      </div>`;
-    }).join('');
-  } catch(e) {
-    div.innerHTML = `<div style="color:var(--red);padding:20px;">Eroare: ${e.message}</div>`;
-  }
-};
-
-window.restaureazaBackup = async (backupId) => {
-  if (!confirm('⚠ Ești sigur?\n\nStocul CURENT va fi înlocuit cu cel din backup.\nAcțiunea nu poate fi anulată!')) return;
-  try {
-    showToast('Se restaurează...');
-    const backupSnap = await getDoc(doc(db, 'backups', backupId));
-    if (!backupSnap.exists()) { showToast('Backup negăsit!', true); return; }
-    const stocBackup = backupSnap.data().stoc || [];
-    // Șterge stocul curent
-    const stocSnap = await getDocs(collection(db, 'stoc'));
-    const batch1 = writeBatch(db);
-    stocSnap.docs.forEach(d => batch1.delete(d.ref));
-    await batch1.commit();
-    // Rescrie din backup cu ID-urile originale
-    const batch2 = writeBatch(db);
-    stocBackup.forEach(h => {
-      const docData = { denumire: h.denumire, tipMarimi: h.tipMarimi || 'standard' };
-      if (h.marimi) docData.marimi = h.marimi;
-      if (h.marimiOrdine) docData.marimiOrdine = h.marimiOrdine;
-      if (h.cantitate !== null && h.cantitate !== undefined) docData.cantitate = h.cantitate;
-      batch2.set(doc(db, 'stoc', h.id), docData);
-    });
-    await batch2.commit();
-    closeModal('modal-restaurare-backup');
-    showToast('✅ Stoc restaurat cu succes!');
-  } catch(e) {
-    showToast('Eroare la restaurare: ' + e.message, true);
-  }
-};
-
-window.descarcaBackup = async (backupId) => {
-  const snap = await getDoc(doc(db, 'backups', backupId));
-  if (!snap.exists()) return;
-  const data = snap.data();
-  const dt = data.data?.toDate ? data.data.toDate() : new Date();
-  const filename = `backup_stoc_${dt.toISOString().slice(0,16).replace('T','_').replace(':','')}`;
-  const blob = new Blob([JSON.stringify({ ...data, data: dt.toISOString() }, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename + '.json';
-  a.click();
-  showToast('⬇ Backup descărcat!');
-};
-
-window.restaureazaDinFisier = async (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-  event.target.value = '';
-  try {
-    const text = await file.text();
-    const data = JSON.parse(text);
-    if (!data.stoc || !Array.isArray(data.stoc)) { showToast('Fișier invalid!', true); return; }
-    if (!confirm(`⚠ Restaurezi din fișierul "${file.name}"?\n\nStocul CURENT va fi înlocuit.\nAcțiunea nu poate fi anulată!`)) return;
-    showToast('Se restaurează din fișier...');
-    const stocSnap = await getDocs(collection(db, 'stoc'));
-    const batch1 = writeBatch(db);
-    stocSnap.docs.forEach(d => batch1.delete(d.ref));
-    await batch1.commit();
-    const batch2 = writeBatch(db);
-    data.stoc.forEach(h => {
-      const docData = { denumire: h.denumire, tipMarimi: h.tipMarimi || 'standard' };
-      if (h.marimi) docData.marimi = h.marimi;
-      if (h.marimiOrdine) docData.marimiOrdine = h.marimiOrdine;
-      if (h.cantitate !== null && h.cantitate !== undefined) docData.cantitate = h.cantitate;
-      batch2.set(doc(db, 'stoc', h.id), docData);
-    });
-    await batch2.commit();
-    showToast('✅ Stoc restaurat din fișier!');
-  } catch(e) {
-    showToast('Eroare: ' + e.message, true);
-  }
-};
 
 // =============================================
 // UI HELPERS
