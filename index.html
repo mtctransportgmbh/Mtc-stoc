@@ -489,7 +489,7 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, increment, serverTimestamp, writeBatch, where, enableNetwork } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, increment, serverTimestamp, writeBatch, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // =============================================
 // FIREBASE CONFIG
@@ -507,16 +507,13 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Reconectare la revenire pe tab
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') enableNetwork(db).catch(()=>{}); });
-window.addEventListener('focus', () => enableNetwork(db).catch(()=>{}));
-window.addEventListener('online', () => { updateConnDot(true); enableNetwork(db).catch(()=>{}); });
-window.addEventListener('offline', () => updateConnDot(false));
-
+// Indicator conexiune
 function updateConnDot(online) {
   const d = document.getElementById('conn-dot');
-  if (d) { d.style.background = online ? 'var(--green)' : 'var(--red)'; }
+  if (d) d.style.background = online ? 'var(--green)' : 'var(--red)';
 }
+window.addEventListener('online', () => updateConnDot(true));
+window.addEventListener('offline', () => updateConnDot(false));
 updateConnDot(navigator.onLine);
 
 // =============================================
