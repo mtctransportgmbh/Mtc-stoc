@@ -1613,6 +1613,8 @@ window.restaureazaDinFisier = async (event) => {
     showToast(`✅ Restaurare completă din ${file.name}!`);
   } catch(e) { showToast('Eroare: ' + e.message, true); }
 };
+
+async function faceBackupAutomat(motiv) {
   try {
     const snapshot = Object.values(stocData).map(h => ({
       id: h.id,
