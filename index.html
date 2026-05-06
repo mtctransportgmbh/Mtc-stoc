@@ -251,7 +251,17 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
           <div class="card-title">OFERĂ HAINE</div>
           <div class="form-field">
             <label class="form-label">Angajat</label>
-            <select class="form-select" id="dist-angajat"><option value="">— Selectează angajat —</option></select>
+            <div style="position:relative;">
+              <div style="display:flex;gap:6px;align-items:center;">
+                <div style="position:relative;flex:1;">
+                  <input type="text" class="form-input" id="dist-angajat-search" placeholder="Caută șofer..." autocomplete="off" oninput="filterAngajatiDropdown()" onfocus="showAngajatiDropdown()" style="padding-right:36px;">
+                  <button onclick="clearAngajatSearch()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;line-height:1;" title="Șterge">✕</button>
+                </div>
+              </div>
+              <input type="hidden" id="dist-angajat">
+              <div id="dist-angajat-dropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--accent);border-radius:4px;max-height:200px;overflow-y:auto;z-index:500;box-shadow:0 8px 24px rgba(0,0,0,0.5);"></div>
+            </div>
+            <div id="dist-angajat-selected" style="display:none;margin-top:6px;font-size:12px;color:var(--accent);letter-spacing:1px;"></div>
           </div>
           <div class="form-row">
             <div class="form-field">
@@ -798,10 +808,57 @@ function renderAngajati() {
 }
 
 function populateAngajatiSelect() {
-  const sel = document.getElementById('dist-angajat');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">— Selectează angajat —</option>'+angajatiData.map(a=>`<option value="${a.id}"${a.id===cur?' selected':''}>${a.nume}</option>`).join('');
+  // Nu mai populăm un select clasic — dropdown-ul se construiește dinamic
+  filterAngajatiDropdown();
 }
+
+window.filterAngajatiDropdown = () => {
+  const search = (document.getElementById('dist-angajat-search')?.value || '').toLowerCase();
+  const dropdown = document.getElementById('dist-angajat-dropdown');
+  if (!dropdown) return;
+  const filtered = angajatiData.filter(a => a.nume.toLowerCase().includes(search));
+  if (!filtered.length) {
+    dropdown.innerHTML = '<div style="padding:12px 16px;color:var(--muted);font-size:13px;">Niciun rezultat</div>';
+    dropdown.style.display = 'block';
+    return;
+  }
+  dropdown.innerHTML = filtered.map(a => `
+    <div onclick="selectAngajat('${a.id}','${a.nume.replace(/'/g,"\\'")}' )"
+      style="padding:12px 16px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);transition:background 0.1s;"
+      onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      ${a.nume}
+    </div>`).join('');
+  dropdown.style.display = 'block';
+};
+
+window.showAngajatiDropdown = () => {
+  filterAngajatiDropdown();
+};
+
+window.selectAngajat = (id, nume) => {
+  document.getElementById('dist-angajat').value = id;
+  document.getElementById('dist-angajat-search').value = nume;
+  document.getElementById('dist-angajat-dropdown').style.display = 'none';
+  const sel = document.getElementById('dist-angajat-selected');
+  sel.textContent = '✓ ' + nume;
+  sel.style.display = 'block';
+};
+
+window.clearAngajatSearch = () => {
+  document.getElementById('dist-angajat').value = '';
+  document.getElementById('dist-angajat-search').value = '';
+  document.getElementById('dist-angajat-dropdown').style.display = 'none';
+  document.getElementById('dist-angajat-selected').style.display = 'none';
+};
+
+// Închide dropdown când dai click în afară
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('dist-angajat-search')?.closest('.form-field');
+  if (wrap && !wrap.contains(e.target)) {
+    const dd = document.getElementById('dist-angajat-dropdown');
+    if (dd) dd.style.display = 'none';
+  }
+});
 
 window.adaugaAngajat = async () => {
   const nume = document.getElementById('ang-name').value.trim();
@@ -900,7 +957,7 @@ window.distribuieHaine = async () => {
   });
   await batch.commit();
   showToast(`✅ ${qty}x ${haina.denumire}${fara?'':' '+marime} → ${angajat?.nume}!`);
-  document.getElementById('dist-angajat').value='';
+  // Păstrează angajatul — resetează doar articol, mărime, cantitate
   document.getElementById('dist-haina').value='';
   document.getElementById('dist-marime').innerHTML='<option value="">— Mărime —</option>';
   document.getElementById('dist-marime-row').style.display='';
