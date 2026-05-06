@@ -382,11 +382,46 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
           <button class="btn-action" style="width:100%;font-size:18px;padding:14px;" onclick="seedData()">⬆ IMPORTĂ DATE DIN EXCEL</button>
         </div>
 
+        <div class="card" style="grid-column:1/-1;">
+          <div class="card-title" style="font-size:18px;">💾 BACKUP STOC</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:12px 16px;background:var(--surface2);border-radius:4px;border:1px solid var(--border);">
+            <div style="font-size:20px;">🕐</div>
+            <div>
+              <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;">Ultimul backup</div>
+              <div id="backup-last-info" style="font-size:14px;font-weight:500;">Se verifică...</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
+            <button class="btn-action" style="padding:12px;" onclick="faBBackupManual()">💾 Backup Manual</button>
+            <button class="btn-secondary" style="padding:12px;" onclick="openModal('modal-restaurare-backup')">🔄 Restaurare din Firebase</button>
+            <button class="btn-secondary" style="padding:12px;border-color:var(--red);color:var(--red);" onclick="document.getElementById('backup-file-input').click()">📁 Restaurare din Fișier</button>
+            <input type="file" id="backup-file-input" accept=".json" style="display:none;" onchange="restaureazaDinFisier(event)">
+          </div>
+          <p style="font-size:11px;color:var(--muted);margin-top:12px;">Backup-ul se face automat la fiecare distribuire sau modificare de stoc. Se păstrează ultimele 10 backup-uri în Firebase.</p>
+        </div>
+
       </div>
     </div>
 
   </div><!-- /content -->
 </div><!-- /app -->
+
+<!-- Modal Restaurare Backup -->
+<div class="modal-overlay" id="modal-restaurare-backup">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-header">
+      <div class="modal-title">🔄 RESTAURARE BACKUP</div>
+      <button class="modal-close" onclick="closeModal('modal-restaurare-backup')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Selectează un backup din Firebase pentru a restaura stocul. Stocul curent va fi înlocuit.</p>
+      <div id="backup-lista"><div class="loading" style="padding:20px;">Se încarcă<span class="dot-pulse"></span></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-restaurare-backup')">Anulează</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODALS -->
 
@@ -640,6 +675,7 @@ function initApp() {
   loadIstoric();
   loadAdaugari();
   loadUsers();
+  updateBackupInfo();
   // Force logout listener pentru operatori
   if (currentRole === 'operator' && currentUser?.uid) {
     onSnapshot(doc(db, 'force_logout', currentUser.uid), (snap) => {
@@ -943,6 +979,7 @@ window.distribuieHaine = async () => {
     operator:currentOperatorName||'—', data:serverTimestamp()
   });
   await batch.commit();
+  faceBackupAutomat(`distribuire ${haina.denumire}${fara?'':' '+marime} → ${angajat?.nume}`);
   showToast(`✅ ${qty}x ${haina.denumire}${fara?'':' '+marime} → ${angajat?.nume}!`);
   // Păstrează angajatul — resetează doar articol, mărime, cantitate
   document.getElementById('dist-haina').value='';
@@ -1109,7 +1146,7 @@ window.adaugaStoc = async () => {
   else batch.update(doc(db,'stoc',hId),{[`marimi.${marime}`]:increment(qty)});
   batch.set(doc(collection(db,'adaugari')),{hainaId:hId,hainaDenumire:haina?.denumire||'—',marime,cantitate:qty,observatii:obs||'',data:serverTimestamp()});
   await batch.commit();
-  closeModal('modal-add-stoc');
+  faceBackupAutomat(`adăugare stoc ${haina?.denumire}${fara?'':' '+marime} +${qty}`);
   document.getElementById('stoc-haina').value='';
   document.getElementById('stoc-marime').innerHTML='<option value="">— Mărime —</option>';
   document.getElementById('stoc-qty').value=1;
@@ -1160,6 +1197,7 @@ window.corecteazaStoc = async () => {
   const dif=nouaQty-stocVechi;
   batch.set(doc(collection(db,'adaugari')),{hainaId:hId,hainaDenumire:haina?.denumire||'—',marime,cantitate:dif,observatii:`CORECȚIE: ${stocVechi}→${nouaQty}${motiv?' | '+motiv:''}`,data:serverTimestamp()});
   await batch.commit();
+  faceBackupAutomat(`corecție ${haina.denumire}${fara?'':' '+marime}: ${stocVechi}→${nouaQty}`);
   closeModal('modal-corecteaza-stoc');
   ['cor-haina','cor-marime','cor-qty','cor-motiv'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('cor-stoc-curent').textContent='—';
@@ -1313,6 +1351,7 @@ window.stergeDistribuire = async (id) => {
     else batch.update(doc(db,'stoc',hainaId), {[`marimi.${marime}`]: increment(cantitate)});
   }
   await batch.commit();
+  faceBackupAutomat(`ștergere distribuire ${hainaDenumire} → ${inreg.angajatNume}`);
   showToast(`✅ Distribuire ștearsă. Stoc +${cantitate} ${hainaDenumire}${fara?'':' '+marime}`);
 };
 
@@ -1333,6 +1372,7 @@ window.stergeAdaugare = async (id) => {
     else batch.update(doc(db,'stoc',hainaId), {[`marimi.${marime}`]: increment(-cantitate)});
   }
   await batch.commit();
+  faceBackupAutomat(`ștergere adăugare ${hainaDenumire}`);
   showToast(`✅ Înregistrare ștearsă. Stoc ajustat cu ${cantitate > 0 ? '-' : '+'}${Math.abs(cantitate)}.`);
 };
 
@@ -1363,6 +1403,175 @@ window.seedData = async () => {
 };
 
 // =============================================
+// SISTEM BACKUP
+// =============================================
+
+async function faceBackupAutomat(motiv) {
+  try {
+    const snapshot = Object.values(stocData).map(h => ({
+      id: h.id,
+      denumire: h.denumire,
+      tipMarimi: h.tipMarimi || 'standard',
+      marimi: h.marimi || null,
+      marimiOrdine: h.marimiOrdine || null,
+      cantitate: h.cantitate || null,
+    }));
+    const backupDoc = {
+      stoc: snapshot,
+      motiv: motiv || 'automat',
+      operator: currentOperatorName || '—',
+      data: serverTimestamp(),
+      nrArticole: snapshot.length,
+      totalBucati: snapshot.reduce((s, h) => {
+        if (estefaraMarimi(h)) return s + (h.cantitate || 0);
+        return s + Object.values(h.marimi || {}).reduce((ss, v) => ss + v, 0);
+      }, 0),
+    };
+    await addDoc(collection(db, 'backups'), backupDoc);
+    // Păstrează doar ultimele 10 backup-uri
+    const snap = await getDocs(query(collection(db, 'backups'), orderBy('data', 'asc')));
+    if (snap.size > 10) {
+      const toDelete = snap.docs.slice(0, snap.size - 10);
+      const batch = writeBatch(db);
+      toDelete.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+    updateBackupInfo();
+  } catch(e) {
+    console.warn('Backup automat eșuat:', e);
+  }
+}
+
+async function updateBackupInfo() {
+  try {
+    const snap = await getDocs(query(collection(db, 'backups'), orderBy('data', 'desc'), limit(1)));
+    const el = document.getElementById('backup-last-info');
+    if (!el) return;
+    if (snap.empty) {
+      el.textContent = 'Niciun backup salvat încă';
+      el.style.color = 'var(--muted)';
+    } else {
+      const d = snap.docs[0].data();
+      const dt = d.data?.toDate ? d.data.toDate() : new Date();
+      const data = dt.toLocaleDateString('ro-RO', {day:'2-digit',month:'2-digit',year:'numeric'});
+      const ora = dt.toLocaleTimeString('ro-RO', {hour:'2-digit',minute:'2-digit'});
+      el.textContent = `${data} ora ${ora} · ${d.motiv} · ${d.nrArticole} articole · ${d.totalBucati} buc`;
+      el.style.color = 'var(--green)';
+    }
+  } catch(e) {
+    const el = document.getElementById('backup-last-info');
+    if (el) el.textContent = 'Nu s-a putut verifica';
+  }
+}
+
+window.faBBackupManual = async () => {
+  showToast('Se face backup...');
+  await faceBackupAutomat('manual de ' + currentOperatorName);
+  showToast('✅ Backup salvat cu succes!');
+};
+
+window.incarcaListaBackupuri = async () => {
+  const div = document.getElementById('backup-lista');
+  try {
+    const snap = await getDocs(query(collection(db, 'backups'), orderBy('data', 'desc')));
+    if (snap.empty) {
+      div.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center;">Niciun backup disponibil.</div>';
+      return;
+    }
+    div.innerHTML = snap.docs.map(d => {
+      const x = d.data();
+      const dt = x.data?.toDate ? x.data.toDate() : new Date();
+      const data = dt.toLocaleDateString('ro-RO', {day:'2-digit',month:'2-digit',year:'numeric'});
+      const ora = dt.toLocaleTimeString('ro-RO', {hour:'2-digit',minute:'2-digit'});
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);gap:10px;">
+        <div>
+          <div style="font-size:13px;font-weight:500;">${data} ora ${ora}</div>
+          <div style="font-size:11px;color:var(--muted);">${x.motiv || 'automat'} · ${x.nrArticole || 0} articole · ${x.totalBucati || 0} buc · 👤 ${x.operator || '—'}</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-secondary" style="padding:6px 12px;font-size:12px;white-space:nowrap;" onclick="descarcaBackup('${d.id}')">⬇ JSON</button>
+          <button class="btn-danger" style="padding:6px 12px;font-size:12px;white-space:nowrap;" onclick="restaureazaBackup('${d.id}')">🔄 Restaurează</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    div.innerHTML = `<div style="color:var(--red);padding:20px;">Eroare: ${e.message}</div>`;
+  }
+};
+
+window.restaureazaBackup = async (backupId) => {
+  if (!confirm('⚠ Ești sigur?\n\nStocul CURENT va fi înlocuit cu cel din backup.\nAcțiunea nu poate fi anulată!')) return;
+  try {
+    showToast('Se restaurează...');
+    const backupSnap = await getDoc(doc(db, 'backups', backupId));
+    if (!backupSnap.exists()) { showToast('Backup negăsit!', true); return; }
+    const stocBackup = backupSnap.data().stoc || [];
+    // Șterge stocul curent
+    const stocSnap = await getDocs(collection(db, 'stoc'));
+    const batch1 = writeBatch(db);
+    stocSnap.docs.forEach(d => batch1.delete(d.ref));
+    await batch1.commit();
+    // Rescrie din backup cu ID-urile originale
+    const batch2 = writeBatch(db);
+    stocBackup.forEach(h => {
+      const docData = { denumire: h.denumire, tipMarimi: h.tipMarimi || 'standard' };
+      if (h.marimi) docData.marimi = h.marimi;
+      if (h.marimiOrdine) docData.marimiOrdine = h.marimiOrdine;
+      if (h.cantitate !== null && h.cantitate !== undefined) docData.cantitate = h.cantitate;
+      batch2.set(doc(db, 'stoc', h.id), docData);
+    });
+    await batch2.commit();
+    closeModal('modal-restaurare-backup');
+    showToast('✅ Stoc restaurat cu succes!');
+  } catch(e) {
+    showToast('Eroare la restaurare: ' + e.message, true);
+  }
+};
+
+window.descarcaBackup = async (backupId) => {
+  const snap = await getDoc(doc(db, 'backups', backupId));
+  if (!snap.exists()) return;
+  const data = snap.data();
+  const dt = data.data?.toDate ? data.data.toDate() : new Date();
+  const filename = `backup_stoc_${dt.toISOString().slice(0,16).replace('T','_').replace(':','')}`;
+  const blob = new Blob([JSON.stringify({ ...data, data: dt.toISOString() }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename + '.json';
+  a.click();
+  showToast('⬇ Backup descărcat!');
+};
+
+window.restaureazaDinFisier = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.stoc || !Array.isArray(data.stoc)) { showToast('Fișier invalid!', true); return; }
+    if (!confirm(`⚠ Restaurezi din fișierul "${file.name}"?\n\nStocul CURENT va fi înlocuit.\nAcțiunea nu poate fi anulată!`)) return;
+    showToast('Se restaurează din fișier...');
+    const stocSnap = await getDocs(collection(db, 'stoc'));
+    const batch1 = writeBatch(db);
+    stocSnap.docs.forEach(d => batch1.delete(d.ref));
+    await batch1.commit();
+    const batch2 = writeBatch(db);
+    data.stoc.forEach(h => {
+      const docData = { denumire: h.denumire, tipMarimi: h.tipMarimi || 'standard' };
+      if (h.marimi) docData.marimi = h.marimi;
+      if (h.marimiOrdine) docData.marimiOrdine = h.marimiOrdine;
+      if (h.cantitate !== null && h.cantitate !== undefined) docData.cantitate = h.cantitate;
+      batch2.set(doc(db, 'stoc', h.id), docData);
+    });
+    await batch2.commit();
+    showToast('✅ Stoc restaurat din fișier!');
+  } catch(e) {
+    showToast('Eroare: ' + e.message, true);
+  }
+};
+
+// =============================================
 // UI HELPERS
 // =============================================
 window.showSection = (id,tab) => {
@@ -1373,9 +1582,13 @@ window.showSection = (id,tab) => {
   if (id==='distribuire') loadRecentDistribuiri();
   if (id==='adaugari') window.renderAdaugari();
   if (id==='raport'){populateRaportFilter();window.renderRaport();}
+  if (id==='admin') updateBackupInfo();
 };
 
-window.openModal = id => document.getElementById(id)?.classList.add('open');
+window.openModal = id => {
+  document.getElementById(id)?.classList.add('open');
+  if (id==='modal-restaurare-backup') window.incarcaListaBackupuri();
+};
 window.closeModal = id => document.getElementById(id)?.classList.remove('open');
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 
