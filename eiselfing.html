@@ -422,8 +422,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig, 'eiselfing');
 const db = getFirestore(app);
 
-// URL Cloud Function angajati-mtc — înlocuiește cu URL-ul real după deploy
-// Exemplu: https://us-central1-angajati-mtc.cloudfunctions.net/angajatiEiselfing
 const ANGAJATI_FN_URL = 'https://us-central1-angajati-f1b01.cloudfunctions.net/angajatiEiselfing';
 
 // Conexiune
@@ -950,23 +948,31 @@ window.confirmarePrimire = async (id) => {
   if (!c) return;
   if (!confirm(`Confirmi primirea comenzii cu ${(c.items || []).length} articol(e)?\nStocul Eiselfing va fi actualizat.`)) return;
   try {
-    // Crește stocul stoc_eiselfing pentru fiecare articol primit
     const b = writeBatch(db);
+    const negasite = [];
     (c.items || []).forEach(it => {
-      if (!it.hainaId) return;
+      // Caută articolul în stoc_eiselfing după denumire (IDs diferite față de stoc Ruhstorf)
+      const stocEntry = Object.values(stocData).find(s =>
+        s.denumire && it.denumire &&
+        s.denumire.trim().toLowerCase() === it.denumire.trim().toLowerCase()
+      );
+      if (!stocEntry) { negasite.push(it.denumire); return; }
       const fara = it.marime === '—';
-      const ref = doc(db, COL_STOC, it.hainaId);
+      const ref = doc(db, COL_STOC, stocEntry.id);
       if (fara) b.update(ref, { cantitate: increment(it.qty) });
       else b.update(ref, { [`marimi.${it.marime}`]: increment(it.qty) });
     });
-    // Marchează comanda ca receptionata
     b.update(doc(db, COL_COMENZI, id), {
       status: 'receptionata',
       receptionatDe: currentUser ? currentUser.name : 'Eiselfing',
       receptionatLa: serverTimestamp(),
     });
     await b.commit();
-    showToast('✅ Primire confirmată! Stoc actualizat.');
+    if (negasite.length) {
+      showToast(`✅ Confirmat! ⚠ Negăsite în stoc Eiselfing: ${negasite.join(', ')}`, false);
+    } else {
+      showToast('✅ Primire confirmată! Stoc Eiselfing actualizat.');
+    }
   } catch(e) { showToast('Eroare: ' + e.message, true); }
 };
 
@@ -1186,7 +1192,7 @@ function showToast(msg, isError = false) {
 const EMAILJS_PUBLIC_KEY  = 'JuujvwU-xaXC71Uzk';
 const EMAILJS_SERVICE_ID  = 'service_1dm74om';
 const EMAILJS_TEMPLATE_ID = 'template_pwnbhdc';
-if (window.emailjs && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+if (window.emailjs) {
   window.emailjs.init(EMAILJS_PUBLIC_KEY);
 }
 </script>

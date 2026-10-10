@@ -595,7 +595,7 @@ const db = getFirestore(app);
 const EMAILJS_PUBLIC_KEY  = 'JuujvwU-xaXC71Uzk';
 const EMAILJS_SERVICE_ID  = 'service_1dm74om';
 const EMAILJS_TEMPLATE_ID = 'template_pwnbhdc';
-if (window.emailjs && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+if (window.emailjs) {
   window.emailjs.init(EMAILJS_PUBLIC_KEY);
 }
 
