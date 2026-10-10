@@ -292,6 +292,14 @@ tr:hover td{background:var(--surface2);}
       <div class="section-header">
         <div class="section-title">COMANDĂ STOC DIN DEPOZIT</div>
       </div>
+      <!-- Comenzi onorate de Ruhstorf, în așteptarea confirmării de primire -->
+      <div id="section-onorate" style="display:none;margin-bottom:24px;">
+        <div style="font-family:var(--font-display);font-size:13px;letter-spacing:2px;color:var(--green);margin-bottom:12px;">
+          📦 COMENZI SOSITE — CONFIRMĂ PRIMIREA
+        </div>
+        <div id="onorate-list"></div>
+      </div>
+
       <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--yellow);border-radius:4px;padding:14px 16px;margin-bottom:20px;font-size:13px;">
         💡 Completează cantitățile dorite și apasă <strong>TRIMITE COMANDĂ</strong>. Comanda ajunge automat la Paul.
       </div>
@@ -400,7 +408,7 @@ tr:hover td{background:var(--surface2);}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, increment, serverTimestamp, writeBatch, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDidhCFWRqGM6i--qJwJz3_R5U9oT3k1to",
@@ -434,7 +442,8 @@ let currentUser = null;
 let stocData = {}, angajatiData = [], istoricData = [];
 let stocDepozitData = {};
 let selectedAngajatId = null, selectedAngajatNume = null;
-let unsubStoc = null, unsubAngajati = null, unsubIstoric = null;
+let unsubStoc = null, unsubAngajati = null, unsubIstoric = null, unsubOnorate = null;
+let comenziOnorate = [];
 let appStarted = false;
 
 const MARIMI = ['XS','S','M','L','XL'];
@@ -504,6 +513,7 @@ function startApp() {
   loadAngajati();
   loadIstoric();
   loadStocDepozit();
+  startOnorateLisener();
 }
 
 // ============================================
@@ -889,6 +899,78 @@ window.exportCSV = () => {
 };
 
 // ============================================
+// COMENZI ONORATE — sosite de la Ruhstorf
+// ============================================
+function startOnorateLisener() {
+  if (unsubOnorate) return;
+  unsubOnorate = onSnapshot(
+    query(collection(db, COL_COMENZI),
+      where('locatie', '==', 'Eiselfing'),
+      where('status', '==', 'onorata')
+    ),
+    (snap) => {
+      comenziOnorate = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderOnoratePanel();
+    },
+    (e) => console.warn('Onorate listener:', e.message)
+  );
+}
+
+function renderOnoratePanel() {
+  const section = document.getElementById('section-onorate');
+  const list = document.getElementById('onorate-list');
+  if (!section || !list) return;
+  if (!comenziOnorate.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  list.innerHTML = comenziOnorate.map(c => {
+    const dataStr = c.data && c.data.toDate ? c.data.toDate().toLocaleDateString('ro-RO') : '—';
+    const itemsHtml = (c.items || []).map(it => {
+      const fara = it.marime === '—';
+      return `<div style="font-size:12px;color:var(--muted);padding:2px 0;">
+        ${it.denumire}${fara ? '' : ' <strong>' + it.marime + '</strong>'}: ${it.qty} buc
+      </div>`;
+    }).join('');
+    return `<div style="background:var(--surface2);border:1px solid var(--green);border-radius:8px;padding:14px 16px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:13px;font-weight:600;">Comandă din ${dataStr}</span>
+        <span style="font-size:11px;color:var(--muted);">de ${c.operator || '—'}</span>
+      </div>
+      ${itemsHtml}
+      ${c.observatii ? `<div style="font-size:12px;color:var(--muted);margin-top:6px;font-style:italic;">Obs: ${c.observatii}</div>` : ''}
+      <button class="btn-action" style="width:100%;margin-top:12px;background:var(--green);color:#000;font-size:13px;padding:10px;"
+        onclick="confirmarePrimire('${c.id}')">
+        ✅ CONFIRMARE PRIMIRE — ACTUALIZARE STOC
+      </button>
+    </div>`;
+  }).join('');
+}
+
+window.confirmarePrimire = async (id) => {
+  const c = comenziOnorate.find(x => x.id === id);
+  if (!c) return;
+  if (!confirm(`Confirmi primirea comenzii cu ${(c.items || []).length} articol(e)?\nStocul Eiselfing va fi actualizat.`)) return;
+  try {
+    // Crește stocul stoc_eiselfing pentru fiecare articol primit
+    const b = writeBatch(db);
+    (c.items || []).forEach(it => {
+      if (!it.hainaId) return;
+      const fara = it.marime === '—';
+      const ref = doc(db, COL_STOC, it.hainaId);
+      if (fara) b.update(ref, { cantitate: increment(it.qty) });
+      else b.update(ref, { [`marimi.${it.marime}`]: increment(it.qty) });
+    });
+    // Marchează comanda ca receptionata
+    b.update(doc(db, COL_COMENZI, id), {
+      status: 'receptionata',
+      receptionatDe: currentUser ? currentUser.name : 'Eiselfing',
+      receptionatLa: serverTimestamp(),
+    });
+    await b.commit();
+    showToast('✅ Primire confirmată! Stoc actualizat.');
+  } catch(e) { showToast('Eroare: ' + e.message, true); }
+};
+
+// ============================================
 // STOC DEPOZIT (pentru comandă)
 // ============================================
 async function loadStocDepozit() {
@@ -1050,13 +1132,10 @@ window.trimiteComanda = async () => {
     body += `\n\nVezi comanda în aplicație la tab-ul 📬 Comenzi.`;
 
     const subject = `[MTC Eiselfing] Comandă haine ${dataStr} — ${currentUser.name}`;
-    const mailtoLink = `mailto:${ADMIN_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-    const a = document.createElement('a');
-    a.href = mailtoLink;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    if (window.emailjs && typeof EMAILJS_PUBLIC_KEY !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+      window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { subject, message: body })
+        .catch(err => console.warn('EmailJS eiselfing:', err));
+    }
 
     // Reset formular
     inputs.forEach(inp => { inp.value = '0'; inp.classList.remove('has-value'); });
@@ -1074,7 +1153,7 @@ window.showSection = (id, tab) => {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('section-' + id)?.classList.add('active');
   tab?.classList.add('active');
-  if (id === 'comanda') loadStocDepozit();
+  if (id === 'comanda') { loadStocDepozit(); startOnorateLisener(); }
 };
 
 window.openModal = (id) => { document.getElementById(id)?.classList.add('open'); };
@@ -1099,6 +1178,17 @@ function showToast(msg, isError = false) {
  'trimiteComanda','updateComandaSummary','stergeIstoric'
 ].forEach(name => { if (window[name]) window['_real_' + name] = window[name]; });
 
+</script>
+
+<!-- EmailJS — aceleași chei ca în index.html -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+const EMAILJS_PUBLIC_KEY  = 'JuujvwU-xaXC71Uzk';
+const EMAILJS_SERVICE_ID  = 'service_1dm74om';
+const EMAILJS_TEMPLATE_ID = 'template_pwnbhdc';
+if (window.emailjs && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+  window.emailjs.init(EMAILJS_PUBLIC_KEY);
+}
 </script>
 </body>
 </html>

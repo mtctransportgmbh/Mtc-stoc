@@ -213,8 +213,7 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
         <span id="header-username">—</span>
         <span class="user-role" id="header-role">—</span>
       </div>
-      <a href="eiselfing.html" target="_blank" style="background:var(--green);color:#fff;border:none;padding:6px 14px;border-radius:3px;cursor:pointer;font-size:12px;font-family:var(--font-body);font-weight:600;letter-spacing:1px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:opacity 0.2s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">📍 Eiselfing</a>
-      <button class="btn-logout admin-only" onclick="doLogout()">Ieșire</button>
+      <button class="btn-logout" onclick="doLogout()">Ieșire</button>
     </div>
   </header>
 
@@ -537,6 +536,9 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
 
 <div id="toast"></div>
 
+<!-- EmailJS — trimite email automat fără server sau deploy -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
 <script>
 // Proxy pentru funcțiile din module — onclick-urile din HTML le apelează înainte ca modulul să se încarce
 // Acest script creează stub-uri care așteaptă până funcțiile sunt disponibile
@@ -582,6 +584,27 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// =============================================
+// EMAILJS CONFIG — fără deploy, funcționează direct din browser
+// Pași rapizi:
+//   1. Cont gratuit pe https://emailjs.com (200 emailuri/lună)
+//   2. Email Services → adaugă Gmail/Yahoo → copiezi SERVICE_ID
+//   3. Email Templates → template nou cu variabilele {{subject}} și {{message}} → copiezi TEMPLATE_ID
+//   4. Account → API Keys → copiezi PUBLIC_KEY
+// =============================================
+const EMAILJS_PUBLIC_KEY  = 'JuujvwU-xaXC71Uzk';
+const EMAILJS_SERVICE_ID  = 'service_1dm74om';
+const EMAILJS_TEMPLATE_ID = 'template_pwnbhdc';
+if (window.emailjs && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+  window.emailjs.init(EMAILJS_PUBLIC_KEY);
+}
+
+function trimitEmailAutomat(subject, message) {
+  if (!window.emailjs || EMAILJS_PUBLIC_KEY === 'YOUR_PUBLIC_KEY') return;
+  window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { subject, message })
+    .catch(err => console.warn('EmailJS:', err));
+}
+
 // Indicator conexiune
 function updateConnDot(online) {
   const d = document.getElementById('conn-dot');
@@ -596,7 +619,7 @@ updateConnDot(navigator.onLine);
 // =============================================
 let currentUser = null, currentRole = null, currentOperatorName = '';
 let stocData = {}, angajatiData = [], istoricData = [], adaugariData = [];
-let unsubStoc = null, unsubAngajati = null, unsubIstoric = null, unsubAdaugari = null;
+let unsubStoc = null, unsubAngajati = null, unsubIstoric = null, unsubAdaugari = null, unsubComenzi = null;
 let appStarted = false;
 
 // =============================================
@@ -682,6 +705,7 @@ onAuthStateChanged(auth, async (user) => {
     if (unsubAngajati) unsubAngajati();
     if (unsubIstoric) unsubIstoric();
     if (unsubAdaugari) unsubAdaugari();
+    if (unsubComenzi) { unsubComenzi(); unsubComenzi = null; }
   }
 });
 
@@ -1650,17 +1674,23 @@ window.setComenziFilter = (f) => {
   renderComenzi();
 };
 
-window.loadComenzi = async () => {
+window.loadComenzi = () => {
+  // Dacă listener-ul e deja activ, nu creăm altul — re-renderăm doar
+  if (unsubComenzi) { renderComenzi(); return; }
   const div = document.getElementById('comenzi-list');
   if (div) div.innerHTML = '<div class="loading">Se încarcă<span class="dot-pulse"></span></div>';
-  try {
-    const snap = await getDocs(query(collection(db,'comenzi'), orderBy('data','desc')));
-    comenziData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderComenzi();
-    updateComenziiBadge();
-  } catch(e) {
-    if (div) div.innerHTML = `<div style="color:var(--red);padding:20px;">Eroare: ${e.message}</div>`;
-  }
+  unsubComenzi = onSnapshot(
+    query(collection(db,'comenzi'), orderBy('data','desc')),
+    (snap) => {
+      comenziData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderComenzi();
+      updateComenziiBadge();
+    },
+    (e) => {
+      const d = document.getElementById('comenzi-list');
+      if (d) d.innerHTML = `<div style="color:var(--red);padding:20px;">Eroare: ${e.message}</div>`;
+    }
+  );
 };
 
 function renderComenzi() {
@@ -1715,12 +1745,24 @@ function updateComenziiBadge() {
 
 window.marcheazaOnorata = async (id) => {
   try {
+    const c = comenziData.find(x => x.id === id);
+    // Scade stocul din depozit Ruhstorf pentru fiecare articol din comandă
+    if (c && c.items && c.items.length) {
+      const b = writeBatch(db);
+      c.items.forEach(it => {
+        if (!it.hainaId) return;
+        const fara = it.marime === '—';
+        const ref = doc(db, 'stoc', it.hainaId);
+        if (fara) b.update(ref, { cantitate: increment(-it.qty) });
+        else b.update(ref, { [`marimi.${it.marime}`]: increment(-it.qty) });
+      });
+      await b.commit();
+    }
     await updateDoc(doc(db,'comenzi',id), { status:'onorata', onorataDe:'Paul', onoratLa: serverTimestamp() });
-    const c = comenziData.find(x=>x.id===id);
     if (c) c.status = 'onorata';
     renderComenzi();
     updateComenziiBadge();
-    showToast('✅ Comandă marcată ca onorata!');
+    showToast('✅ Comandă onorata! Stoc depozit actualizat.');
   } catch(e) { showToast('Eroare: '+e.message, true); }
 };
 
@@ -1738,21 +1780,46 @@ window.stergeComanada = async (id) => {
 window.trimitEmailRaspuns = (id) => {
   const c = comenziData.find(x=>x.id===id);
   if (!c) return;
-  const subject = `[MTC] Răspuns comandă Eiselfing — ${c.operator}`;
-  const body = `Bună ${c.operator},\n\nAm primit comanda ta și o procesăm.\n\nArticolele comandate:\n${(c.items||[]).map(it=>
+  if (!window.emailjs || EMAILJS_PUBLIC_KEY === 'YOUR_PUBLIC_KEY') {
+    showToast('⚠ Completează cheile EmailJS în cod (3 constante).', true);
+    return;
+  }
+  const itemsText = (c.items||[]).map(it =>
     `• ${it.denumire}${it.marime==='—'?'':' '+it.marime}: ${it.qty} buc`
-  ).join('\n')}\n\nCu stimă,\nPaul — MTC Transport`;
-  window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+  ).join('\n');
+  window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+    subject: `[MTC] Confirmare comandă — ${c.operator||'Eiselfing'}`,
+    message: `Am primit comanda de la ${c.operator||'—'} și o procesăm.\n\nArticole comandate:\n${itemsText}${c.observatii?'\n\nObservații: '+c.observatii:''}`,
+  })
+    .then(() => showToast('📧 Email trimis!'))
+    .catch(err => showToast('Eroare email: ' + (err.text || err), true));
 };
 
-// Listener realtime pentru comenzi noi (badge)
+// Listener realtime pentru comenzi noi — actualizează badge + trimite email automat
 function startComenziListener() {
+  let firstLoad = true;
   onSnapshot(query(collection(db,'comenzi'), where('status','==','noua')), (snap) => {
     const badge = document.getElementById('comenzi-badge');
-    if (!badge) return;
     const n = snap.size;
-    if (n > 0) { badge.textContent = n; badge.style.display = 'block'; }
-    else { badge.style.display = 'none'; }
+    if (badge) {
+      if (n > 0) { badge.textContent = n; badge.style.display = 'block'; }
+      else { badge.style.display = 'none'; }
+    }
+    if (!firstLoad) {
+      snap.docChanges().forEach(change => {
+        if (change.type === 'added') {
+          const c = change.doc.data();
+          const itemsText = (c.items||[]).map(it =>
+            `• ${it.denumire}${it.marime==='—'?'':' '+it.marime}: ${it.qty} buc`
+          ).join('\n');
+          trimitEmailAutomat(
+            `[MTC] Comandă nouă — ${c.operator||'Eiselfing'}`,
+            `Comandă nouă de la ${c.operator||'—'}:\n\n${itemsText}${c.observatii?'\n\nObservații: '+c.observatii:''}\n\nData: ${new Date().toLocaleString('ro-RO')}`
+          );
+        }
+      });
+    }
+    firstLoad = false;
   });
 }
 
