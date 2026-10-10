@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MTC TRANSPORT — Gestiune stoc haine</title>
-<meta name="theme-color" content="#0a0a0a">
+<meta name="theme-color" content="#f5f6f8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,9 +18,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:#0a0a0a; --surface:#141414; --surface2:#1e1e1e; --border:#2a2a2a;
-  --accent:#e8c547; --accent2:#c9a92e; --red:#e84747; --green:#47c97a;
-  --text:#f0f0f0; --muted:#666;
+  --bg:#f5f6f8; --surface:#ffffff; --surface2:#eef0f3; --border:#d8dce3;
+  --accent:#c9a92e; --accent2:#a88822; --red:#cc3333; --green:#27a85a;
+  --text:#1a1d23; --muted:#7a8390;
   --font-display:'Bebas Neue',sans-serif;
   --font-body:'DM Sans',sans-serif;
   --font-mono:'DM Mono',monospace;
@@ -29,7 +29,7 @@
 body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;overflow-x:hidden;}
 
 /* AUTH */
-#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at 30% 50%,#1a1500 0%,#0a0a0a 70%);}
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at 30% 50%,#f0e8c8 0%,#f5f6f8 70%);}
 .auth-box{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--accent);padding:48px 40px;width:100%;max-width:420px;border-radius:4px;}
 .auth-logo{font-family:var(--font-display);font-size:36px;letter-spacing:3px;color:var(--accent);margin-bottom:4px;}
 .auth-subtitle{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:28px;}
@@ -43,7 +43,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-hei
 .auth-switch{text-align:center;margin-top:16px;font-size:12px;color:var(--muted);cursor:pointer;transition:color 0.2s;letter-spacing:0.5px;}
 .auth-switch:hover{color:var(--accent);}
 .btn-operator{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:16px;font-family:var(--font-display);font-size:22px;letter-spacing:3px;cursor:pointer;border-radius:3px;transition:all 0.15s;text-align:center;}
-.btn-operator:hover{border-color:var(--accent);color:var(--accent);background:#1a1500;}
+.btn-operator:hover{border-color:var(--accent);color:var(--accent);background:#fdf6e0;}
 .btn-operator:active{transform:scale(0.98);}
 
 /* HEADER */
@@ -129,7 +129,7 @@ tr:hover td{background:var(--surface2);}
 .search-input:focus{outline:none;border-color:var(--accent);}
 
 /* MODAL */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,29,35,0.5);z-index:1000;align-items:center;justify-content:center;padding:20px;}
 .modal-overlay.open{display:flex;}
 .modal{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--accent);border-radius:4px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;}
 .modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
@@ -213,6 +213,7 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
         <span id="header-username">—</span>
         <span class="user-role" id="header-role">—</span>
       </div>
+      <a href="eiselfing.html" target="_blank" style="background:var(--green);color:#fff;border:none;padding:6px 14px;border-radius:3px;cursor:pointer;font-size:12px;font-family:var(--font-body);font-weight:600;letter-spacing:1px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:opacity 0.2s;" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">📍 Eiselfing</a>
       <button class="btn-logout admin-only" onclick="doLogout()">Ieșire</button>
     </div>
   </header>
@@ -224,6 +225,7 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
     <div class="nav-tab admin-only" onclick="showSection('angajati',this)">👥 Angajați</div>
     <div class="nav-tab admin-only" onclick="showSection('adaugari',this)">📥 Adăugări Stoc</div>
     <div class="nav-tab admin-only" onclick="showSection('raport',this)">📊 Raport Persoane</div>
+    <div class="nav-tab admin-only" id="tab-comenzi" onclick="showSection('comenzi',this)" style="position:relative;">📬 Comenzi<span id="comenzi-badge" style="display:none;position:absolute;top:8px;right:4px;background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;text-align:center;line-height:16px;padding:0 3px;"></span></div>
     <div class="nav-tab admin-only" onclick="showSection('admin',this)">⚙️ Admin</div>
   </div>
 
@@ -259,7 +261,7 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
                 </div>
               </div>
               <input type="hidden" id="dist-angajat">
-              <div id="dist-angajat-dropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--accent);border-radius:4px;max-height:200px;overflow-y:auto;z-index:500;box-shadow:0 8px 24px rgba(0,0,0,0.5);"></div>
+              <div id="dist-angajat-dropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--accent);border-radius:4px;max-height:200px;overflow-y:auto;z-index:500;box-shadow:0 8px 24px rgba(26,29,35,0.15);"></div>
             </div>
             <div id="dist-angajat-selected" style="display:none;margin-top:6px;font-size:12px;color:var(--accent);letter-spacing:1px;"></div>
           </div>
@@ -349,6 +351,20 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
         </div>
       </div>
       <div id="raport-content"></div>
+    </div>
+
+    <!-- COMENZI EISELFING -->
+    <div class="section admin-only" id="section-comenzi">
+      <div class="section-header">
+        <div class="section-title">📬 COMENZI EISELFING</div>
+        <button class="btn-secondary" onclick="loadComenzi()">🔄 Reîncarcă</button>
+      </div>
+      <div id="comenzi-filtru" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <button class="btn-secondary" id="filtru-toate" onclick="setComenziFilter('toate')" style="border-color:var(--accent);color:var(--accent);">Toate</button>
+        <button class="btn-secondary" id="filtru-noi" onclick="setComenziFilter('noua')">Noi</button>
+        <button class="btn-secondary" id="filtru-onorate" onclick="setComenziFilter('onorata')">Onorate</button>
+      </div>
+      <div id="comenzi-list"><div class="loading">Se încarcă<span class="dot-pulse"></span></div></div>
     </div>
 
     <!-- ADMIN -->
@@ -540,7 +556,8 @@ function _makeProxy(name) {
  'showStocScazut','filterIstoric','renderAdaugari','renderAngajati','renderRaport',
  'exportCSV','exportCSVAdaugari','exportCSVRaport',
  'faBBackupManual','incarcaListaBackupuri','restaureazaStocDinFirebase','restaureazaDinFisier',
- 'forceLogoutOperator','seedData','stergeDistribuire','stergeAdaugare'
+ 'forceLogoutOperator','seedData','stergeDistribuire','stergeAdaugare',
+ 'loadComenzi','setComenziFilter','marcheazaOnorata','stergeComanada','trimitEmailRaspuns'
 ].forEach(_makeProxy);
 </script>
 
@@ -699,6 +716,7 @@ function initApp() {
   loadAdaugari();
   loadUsers();
   updateBackupInfo();
+  if (currentRole === 'admin') startComenziListener();
   // Force logout listener pentru operatori
   if (currentRole === 'operator' && currentUser?.uid) {
     onSnapshot(doc(db, 'force_logout', currentUser.uid), (snap) => {
@@ -1615,6 +1633,130 @@ window.restaureazaDinFisier = async (event) => {
 };
 
 // =============================================
+// COMENZI EISELFING
+// =============================================
+let comenziFilter = 'toate';
+let comenziData = [];
+
+window.setComenziFilter = (f) => {
+  comenziFilter = f;
+  ['toate','noua','onorata'].forEach(x => {
+    const btn = document.getElementById('filtru-' + x);
+    if (btn) {
+      btn.style.borderColor = x===f ? 'var(--accent)' : 'var(--border)';
+      btn.style.color = x===f ? 'var(--accent)' : 'var(--text)';
+    }
+  });
+  renderComenzi();
+};
+
+window.loadComenzi = async () => {
+  const div = document.getElementById('comenzi-list');
+  if (div) div.innerHTML = '<div class="loading">Se încarcă<span class="dot-pulse"></span></div>';
+  try {
+    const snap = await getDocs(query(collection(db,'comenzi'), orderBy('data','desc')));
+    comenziData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderComenzi();
+    updateComenziiBadge();
+  } catch(e) {
+    if (div) div.innerHTML = `<div style="color:var(--red);padding:20px;">Eroare: ${e.message}</div>`;
+  }
+};
+
+function renderComenzi() {
+  const div = document.getElementById('comenzi-list');
+  if (!div) return;
+  const filtered = comenziData.filter(c => comenziFilter==='toate' || c.status===comenziFilter);
+  if (!filtered.length) {
+    div.innerHTML = '<div class="loading">Nicio comandă.</div>';
+    return;
+  }
+  div.innerHTML = filtered.map(c => {
+    const dt = c.data?.toDate ? c.data.toDate() : new Date();
+    const data = dt.toLocaleDateString('ro-RO',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const ora = dt.toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'});
+    const isNoua = c.status==='noua' || !c.status;
+    const statusBadge = isNoua
+      ? `<span style="background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;letter-spacing:1px;">NOUĂ</span>`
+      : `<span style="background:var(--green);color:#000;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;letter-spacing:1px;">ONORATA</span>`;
+    const items = (c.items||[]).map(it => {
+      const fara = it.marime==='—';
+      return `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1a1a1a;font-size:13px;">
+        <span>${it.denumire}${fara?'':' <strong>'+it.marime+'</strong>'}</span>
+        <span style="font-family:var(--font-mono);color:var(--yellow);">${it.qty} buc</span>
+      </div>`;
+    }).join('');
+    return `<div style="background:var(--surface);border:1px solid ${isNoua?'var(--red)':'var(--border)'};border-radius:4px;padding:20px;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-family:var(--font-display);font-size:20px;letter-spacing:2px;color:var(--accent);">EISELFING · ${c.operator||'—'}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">${data} ora ${ora}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">${statusBadge}</div>
+      </div>
+      <div style="margin-bottom:12px;">${items}</div>
+      ${c.observatii ? `<div style="font-size:12px;color:var(--muted);margin-bottom:12px;padding:8px;background:var(--surface2);border-radius:3px;">📝 ${c.observatii}</div>` : ''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${isNoua ? `<button class="btn-action" style="font-size:13px;padding:8px 16px;" onclick="marcheazaOnorata('${c.id}')">✅ Marchează ca onorata</button>` : ''}
+        <button class="btn-secondary" style="font-size:13px;padding:8px 16px;" onclick="trimitEmailRaspuns('${c.id}')">📧 Răspunde pe email</button>
+        <button class="btn-danger" style="font-size:12px;padding:6px 12px;" onclick="stergeComanada('${c.id}')">✕ Șterge</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateComenziiBadge() {
+  const noi = comenziData.filter(c => c.status==='noua' || !c.status).length;
+  const badge = document.getElementById('comenzi-badge');
+  if (!badge) return;
+  if (noi > 0) { badge.textContent = noi; badge.style.display = 'block'; }
+  else { badge.style.display = 'none'; }
+}
+
+window.marcheazaOnorata = async (id) => {
+  try {
+    await updateDoc(doc(db,'comenzi',id), { status:'onorata', onorataDe:'Paul', onoratLa: serverTimestamp() });
+    const c = comenziData.find(x=>x.id===id);
+    if (c) c.status = 'onorata';
+    renderComenzi();
+    updateComenziiBadge();
+    showToast('✅ Comandă marcată ca onorata!');
+  } catch(e) { showToast('Eroare: '+e.message, true); }
+};
+
+window.stergeComanada = async (id) => {
+  if (!confirm('Ștergi această comandă?')) return;
+  try {
+    await deleteDoc(doc(db,'comenzi',id));
+    comenziData = comenziData.filter(x=>x.id!==id);
+    renderComenzi();
+    updateComenziiBadge();
+    showToast('✅ Comandă ștearsă!');
+  } catch(e) { showToast('Eroare: '+e.message, true); }
+};
+
+window.trimitEmailRaspuns = (id) => {
+  const c = comenziData.find(x=>x.id===id);
+  if (!c) return;
+  const subject = `[MTC] Răspuns comandă Eiselfing — ${c.operator}`;
+  const body = `Bună ${c.operator},\n\nAm primit comanda ta și o procesăm.\n\nArticolele comandate:\n${(c.items||[]).map(it=>
+    `• ${it.denumire}${it.marime==='—'?'':' '+it.marime}: ${it.qty} buc`
+  ).join('\n')}\n\nCu stimă,\nPaul — MTC Transport`;
+  window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+};
+
+// Listener realtime pentru comenzi noi (badge)
+function startComenziListener() {
+  onSnapshot(query(collection(db,'comenzi'), where('status','==','noua')), (snap) => {
+    const badge = document.getElementById('comenzi-badge');
+    if (!badge) return;
+    const n = snap.size;
+    if (n > 0) { badge.textContent = n; badge.style.display = 'block'; }
+    else { badge.style.display = 'none'; }
+  });
+}
+
+// =============================================
 // UI HELPERS
 // =============================================
 window.showSection = (id,tab) => {
@@ -1626,6 +1768,7 @@ window.showSection = (id,tab) => {
   if (id==='adaugari') window.renderAdaugari();
   if (id==='raport'){populateRaportFilter();window.renderRaport();}
   if (id==='admin') updateBackupInfo();
+  if (id==='comenzi') window.loadComenzi();
 };
 
 window.openModal = id => {
@@ -1658,7 +1801,8 @@ function downloadCSV(rows,filename){
  'showStocScazut','filterIstoric','renderAdaugari','renderAngajati','renderRaport',
  'exportCSV','exportCSVAdaugari','exportCSVRaport',
  'faBBackupManual','incarcaListaBackupuri','restaureazaStocDinFirebase','restaureazaDinFisier',
- 'forceLogoutOperator','seedData','stergeDistribuire','stergeAdaugare','showToast'
+ 'forceLogoutOperator','seedData','stergeDistribuire','stergeAdaugare','showToast',
+ 'loadComenzi','setComenziFilter','marcheazaOnorata','stergeComanada','trimitEmailRaspuns'
 ].forEach(name => { if (window[name]) window['_real_' + name] = window[name]; });
 
 </script>
