@@ -209,23 +209,6 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
       </div>
 
       <div class="auth-switch" onclick="toggleAdminLogin()" style="margin-top:16px;">🔐 Sunt administratorul</div>
-
-      <!-- Reset admin pentru operatori -->
-      <div style="text-align:center;margin-top:12px;">
-        <button onclick="showOpAdminReset()" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">🔧 Reset PIN (Admin)</button>
-      </div>
-      <div id="op-admin-reset-row" style="display:none;margin-top:12px;padding:16px;background:var(--surface2);border-radius:3px;border:1px solid var(--border);">
-        <select id="op-reset-user" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:3px;background:var(--bg);color:var(--text);margin-bottom:10px;font-size:13px;">
-          <option value="">— Selectează utilizatorul —</option>
-          <option value="operator1">Cristi</option>
-          <option value="operator2">Mihaela</option>
-          <option value="operator3">Raluca</option>
-        </select>
-        <input type="password" id="op-reset-pin-input" placeholder="PIN admin (6 cifre)"
-          style="width:100%;padding:10px;border:1px solid var(--border);border-radius:3px;background:var(--bg);color:var(--text);margin-bottom:10px;font-size:14px;text-align:center;letter-spacing:4px;box-sizing:border-box;"
-          onkeydown="if(event.key==='Enter')doOpAdminReset()">
-        <button class="btn-primary" style="background:var(--red);margin-top:0;" onclick="doOpAdminReset()">RESETEAZĂ PIN</button>
-      </div>
     </div>
 
     <div id="admin-login" style="display:none;">
@@ -429,6 +412,26 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
               <button class="btn-danger" onclick="forceLogoutOperator('operator3','Raluca')">Deconectează</button>
             </div>
           </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="font-size:18px;">🔑 RESET PIN OPERATORI</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Resetează PIN-ul unui operator (va trebui să-și aleagă unul nou la următoarea conectare)</p>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+              <div style="font-size:13px;font-weight:600;">Cristi</div>
+              <button class="btn-danger" onclick="adminResetOpPin('operator1','Cristi')">Reset PIN</button>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+              <div style="font-size:13px;font-weight:600;">Mihaela</div>
+              <button class="btn-danger" onclick="adminResetOpPin('operator2','Mihaela')">Reset PIN</button>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
+              <div style="font-size:13px;font-weight:600;">Raluca</div>
+              <button class="btn-danger" onclick="adminResetOpPin('operator3','Raluca')">Reset PIN</button>
+            </div>
+          </div>
+          <div id="admin-pin-reset-msg" style="margin-top:10px;font-size:12px;min-height:16px;"></div>
         </div>
 
         <div class="card">
@@ -762,23 +765,15 @@ window.saveOperatorPin = () => {
   _doOperatorLoginSuccess(opId);
 };
 
-window.showOpAdminReset = () => {
-  const row = document.getElementById('op-admin-reset-row');
-  row.style.display = row.style.display === 'none' ? 'block' : 'none';
-  document.getElementById('op-reset-pin-input').value = '';
-  _setOpAuthError('');
-};
-
-window.doOpAdminReset = () => {
-  const adminPin = (document.getElementById('op-reset-pin-input').value || '').trim();
-  const opId = document.getElementById('op-reset-user').value;
-  if (adminPin !== OP_ADMIN_RESET_PIN) { _setOpAuthError('PIN admin incorect.'); return; }
-  if (!opId) { _setOpAuthError('Selectează utilizatorul de resetat.'); return; }
+window.adminResetOpPin = (opId, name) => {
+  if (!confirm(`Resetezi PIN-ul pentru ${name}?\nLa următoarea conectare va trebui să-și aleagă un PIN nou.`)) return;
   opClearPin(opId);
-  document.getElementById('op-admin-reset-row').style.display = 'none';
-  document.getElementById('op-reset-pin-input').value = '';
-  document.getElementById('op-reset-user').value = '';
-  _setOpAuthError(`✅ PIN resetat pentru ${OPERATORI[opId].displayName}. La următoarea conectare va alege unul nou.`, 'var(--green)');
+  const msg = document.getElementById('admin-pin-reset-msg');
+  if (msg) {
+    msg.style.color = 'var(--green)';
+    msg.textContent = `✅ PIN resetat pentru ${name}.`;
+    setTimeout(() => { msg.textContent = ''; }, 4000);
+  }
 };
 
 window.toggleAdminLogin = () => {

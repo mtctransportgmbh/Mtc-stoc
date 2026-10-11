@@ -200,23 +200,6 @@ tr:hover td{background:var(--surface2);}
     </div>
 
     <div class="auth-error" id="auth-error" style="margin-top:12px;"></div>
-
-    <!-- Reset admin (vizibil doar la click) -->
-    <div style="text-align:center;margin-top:20px;">
-      <button onclick="showAdminReset()" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">🔧 Reset PIN (Admin)</button>
-    </div>
-    <div id="admin-reset-row" style="display:none;margin-top:10px;padding:14px;border:1px solid var(--border);border-radius:4px;background:var(--surface2);">
-      <p style="font-size:11px;color:var(--muted);margin-bottom:10px;">Resetează PIN-ul unui utilizator</p>
-      <select id="admin-reset-user" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);margin-bottom:8px;box-sizing:border-box;">
-        <option value="">— Selectează utilizatorul —</option>
-        <option value="madalina">Mădălina</option>
-        <option value="alex">Alex</option>
-      </select>
-      <input type="password" id="admin-reset-pin" maxlength="8" placeholder="PIN admin"
-        style="width:100%;padding:10px;font-size:16px;text-align:center;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);box-sizing:border-box;margin-bottom:8px;"
-        onkeydown="if(event.key==='Enter')doAdminReset()">
-      <button class="btn-action" style="width:100%;font-size:13px;padding:10px;background:var(--red);" onclick="doAdminReset()">RESETEAZĂ PIN</button>
-    </div>
   </div>
 </div>
 
@@ -240,6 +223,7 @@ tr:hover td{background:var(--surface2);}
     <div class="nav-tab" onclick="showSection('istoric',this)">📋 Istoric</div>
     <div class="nav-tab" onclick="showSection('angajati',this)">👥 Angajați</div>
     <div class="nav-tab" id="tab-comanda" onclick="showSection('comanda',this)">🛒 Comandă Stoc</div>
+    <div class="nav-tab" onclick="showSection('setari',this)">⚙️ Setări</div>
   </div>
 
   <div class="content">
@@ -361,6 +345,30 @@ tr:hover td{background:var(--surface2);}
       </div>
     </div>
 
+    <!-- SETĂRI -->
+    <div class="section" id="section-setari">
+      <div class="section-title" style="margin-bottom:20px;">SETĂRI</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;">
+
+        <div class="card">
+          <div style="font-family:var(--font-display);font-size:18px;letter-spacing:2px;margin-bottom:8px;">🔑 RESET PIN</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Resetează PIN-ul unui utilizator. La următoarea conectare va trebui să-și aleagă unul nou.</p>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+              <div style="font-size:13px;font-weight:600;">Mădălina</div>
+              <button style="background:var(--red);color:#fff;border:none;padding:6px 14px;font-size:12px;cursor:pointer;border-radius:3px;" onclick="adminResetEiPin('madalina','Mădălina')">Reset PIN</button>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
+              <div style="font-size:13px;font-weight:600;">Alex</div>
+              <button style="background:var(--red);color:#fff;border:none;padding:6px 14px;font-size:12px;cursor:pointer;border-radius:3px;" onclick="adminResetEiPin('alex','Alex')">Reset PIN</button>
+            </div>
+          </div>
+          <div id="ei-pin-reset-msg" style="margin-top:10px;font-size:12px;min-height:16px;"></div>
+        </div>
+
+      </div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /app -->
 
@@ -435,12 +443,12 @@ tr:hover td{background:var(--surface2);}
 
 <script>
 // Proxy-uri pentru onclick înainte ca modulul să se încarce
-['selectUser','confirmPin','saveNewPin','showAdminReset','doAdminReset','doLogout',
+['selectUser','confirmPin','saveNewPin','doLogout',
  'showSection','openModal','closeModal',
  'filterAngajatiDropdown','showAngajatiDropdown','clearAngajatSearch','selectAngajat',
  'updateSizeOptions','distribuieHaine','filterIstoric','exportCSV','renderAngajati',
  'updateAddStocMarime','adaugaStoc','updateCorMarime','updateCorStocCurent','corecteazaStoc',
- 'trimiteComanda','updateComandaSummary'
+ 'trimiteComanda','updateComandaSummary','adminResetEiPin'
 ].forEach(name => {
   window[name] = function(...args) {
     if (window['_real_' + name]) return window['_real_' + name](...args);
@@ -591,23 +599,15 @@ window.saveNewPin = () => {
   _doLoginSuccess(userId);
 };
 
-window.showAdminReset = () => {
-  const row = document.getElementById('admin-reset-row');
-  row.style.display = row.style.display === 'none' ? 'block' : 'none';
-  document.getElementById('admin-reset-pin').value = '';
-  _setAuthError('');
-};
-
-window.doAdminReset = () => {
-  const adminPin = (document.getElementById('admin-reset-pin').value || '').trim();
-  const userId = document.getElementById('admin-reset-user').value;
-  if (adminPin !== ADMIN_RESET_PIN) { _setAuthError('PIN admin incorect.'); return; }
-  if (!userId) { _setAuthError('Selectează utilizatorul de resetat.'); return; }
+window.adminResetEiPin = (userId, name) => {
+  if (!confirm(`Resetezi PIN-ul pentru ${name}?\nLa următoarea conectare va trebui să-și aleagă un PIN nou.`)) return;
   clearPin(userId);
-  document.getElementById('admin-reset-row').style.display = 'none';
-  document.getElementById('admin-reset-pin').value = '';
-  document.getElementById('admin-reset-user').value = '';
-  _setAuthError(`✅ PIN resetat pentru ${PIN_NAMES[userId]}. La următoarea conectare va alege unul nou.`, 'var(--green)');
+  const msg = document.getElementById('ei-pin-reset-msg');
+  if (msg) {
+    msg.style.color = 'var(--green)';
+    msg.textContent = `✅ PIN resetat pentru ${name}.`;
+    setTimeout(() => { msg.textContent = ''; }, 4000);
+  }
 };
 
 window.doLogout = () => {
@@ -1314,12 +1314,12 @@ function showToast(msg, isError = false) {
 }
 
 // Înregistrează _real_ pentru proxy-uri
-['selectUser','confirmPin','saveNewPin','showAdminReset','doAdminReset','doLogout',
+['selectUser','confirmPin','saveNewPin','doLogout',
  'showSection','openModal','closeModal',
  'filterAngajatiDropdown','showAngajatiDropdown','clearAngajatSearch','selectAngajat',
  'updateSizeOptions','distribuieHaine','filterIstoric','exportCSV','renderAngajati',
  'updateAddStocMarime','adaugaStoc','updateCorMarime','updateCorStocCurent','corecteazaStoc',
- 'trimiteComanda','updateComandaSummary','stergeIstoric'
+ 'trimiteComanda','updateComandaSummary','stergeIstoric','adminResetEiPin'
 ].forEach(name => { if (window[name]) window['_real_' + name] = window[name]; });
 
 </script>
