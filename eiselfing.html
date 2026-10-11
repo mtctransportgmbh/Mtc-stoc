@@ -223,7 +223,6 @@ tr:hover td{background:var(--surface2);}
     <div class="nav-tab" onclick="showSection('istoric',this)">📋 Istoric</div>
     <div class="nav-tab" onclick="showSection('angajati',this)">👥 Angajați</div>
     <div class="nav-tab" id="tab-comanda" onclick="showSection('comanda',this)">🛒 Comandă Stoc</div>
-    <div class="nav-tab" onclick="showSection('setari',this)">⚙️ Setări</div>
   </div>
 
   <div class="content">
@@ -345,30 +344,6 @@ tr:hover td{background:var(--surface2);}
       </div>
     </div>
 
-    <!-- SETĂRI -->
-    <div class="section" id="section-setari">
-      <div class="section-title" style="margin-bottom:20px;">SETĂRI</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;">
-
-        <div class="card">
-          <div style="font-family:var(--font-display);font-size:18px;letter-spacing:2px;margin-bottom:8px;">🔑 RESET PIN</div>
-          <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Resetează PIN-ul unui utilizator. La următoarea conectare va trebui să-și aleagă unul nou.</p>
-          <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
-              <div style="font-size:13px;font-weight:600;">Mădălina</div>
-              <button style="background:var(--red);color:#fff;border:none;padding:6px 14px;font-size:12px;cursor:pointer;border-radius:3px;" onclick="adminResetEiPin('madalina','Mădălina')">Reset PIN</button>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;">
-              <div style="font-size:13px;font-weight:600;">Alex</div>
-              <button style="background:var(--red);color:#fff;border:none;padding:6px 14px;font-size:12px;cursor:pointer;border-radius:3px;" onclick="adminResetEiPin('alex','Alex')">Reset PIN</button>
-            </div>
-          </div>
-          <div id="ei-pin-reset-msg" style="margin-top:10px;font-size:12px;min-height:16px;"></div>
-        </div>
-
-      </div>
-    </div>
-
   </div><!-- /content -->
 </div><!-- /app -->
 
@@ -448,7 +423,7 @@ tr:hover td{background:var(--surface2);}
  'filterAngajatiDropdown','showAngajatiDropdown','clearAngajatSearch','selectAngajat',
  'updateSizeOptions','distribuieHaine','filterIstoric','exportCSV','renderAngajati',
  'updateAddStocMarime','adaugaStoc','updateCorMarime','updateCorStocCurent','corecteazaStoc',
- 'trimiteComanda','updateComandaSummary','adminResetEiPin'
+ 'trimiteComanda','updateComandaSummary'
 ].forEach(name => {
   window[name] = function(...args) {
     if (window['_real_' + name]) return window['_real_' + name](...args);
@@ -535,8 +510,10 @@ function getMarimiArticol(h) {
 }
 
 // ============================================
-// AUTH
+// AUTH — PIN stocat în Firestore (resetabil de admin din Ruhstorf)
 // ============================================
+const PIN_NAMES = { madalina: 'Mădălina', alex: 'Alex' };
+const COL_EI_PINS = 'eiselfing_pins';
 let _pendingUserId = null;
 
 function _setAuthError(msg, color) {
@@ -551,62 +528,63 @@ function _doLoginSuccess(userId) {
   startApp();
 }
 
-window.selectUser = (userId) => {
+window.selectUser = async (userId) => {
   _pendingUserId = userId;
   _setAuthError('');
   document.querySelectorAll('.btn-operator').forEach(b => b.style.opacity = '0.45');
   const btn = document.getElementById('btn-user-' + userId);
   if (btn) btn.style.opacity = '1';
-
-  if (hasPinSet(userId)) {
-    // Utilizator cu PIN deja setat — cere PIN
-    document.getElementById('pin-row').style.display = 'block';
-    document.getElementById('pin-setup-row').style.display = 'none';
-    document.getElementById('pin-input').value = '';
-    setTimeout(() => document.getElementById('pin-input').focus(), 50);
-  } else {
-    // Prima conectare — setare PIN nou
-    document.getElementById('pin-row').style.display = 'none';
-    document.getElementById('pin-setup-row').style.display = 'block';
-    document.getElementById('pin-new').value = '';
-    document.getElementById('pin-confirm').value = '';
-    setTimeout(() => document.getElementById('pin-new').focus(), 50);
+  // Ascunde ambele rânduri cât verificăm Firestore
+  document.getElementById('pin-row').style.display = 'none';
+  document.getElementById('pin-setup-row').style.display = 'none';
+  try {
+    const snap = await getDoc(doc(db, COL_EI_PINS, userId));
+    if (snap.exists()) {
+      document.getElementById('pin-row').style.display = 'block';
+      document.getElementById('pin-input').value = '';
+      setTimeout(() => document.getElementById('pin-input').focus(), 50);
+    } else {
+      document.getElementById('pin-setup-row').style.display = 'block';
+      document.getElementById('pin-new').value = '';
+      document.getElementById('pin-confirm').value = '';
+      setTimeout(() => document.getElementById('pin-new').focus(), 50);
+    }
+  } catch(e) {
+    _setAuthError('Eroare de conectare. Încearcă din nou.');
   }
 };
 
-window.confirmPin = () => {
+window.confirmPin = async () => {
   const userId = _pendingUserId;
   const pin = (document.getElementById('pin-input').value || '').trim();
   if (!userId) { _setAuthError('Selectează mai întâi utilizatorul.'); return; }
   if (!pin) { _setAuthError('Introdu PIN-ul.'); return; }
-  if (pin !== getPin(userId)) {
-    _setAuthError('PIN incorect. Încearcă din nou.');
-    document.getElementById('pin-input').value = '';
-    document.getElementById('pin-input').focus();
-    return;
+  try {
+    const snap = await getDoc(doc(db, COL_EI_PINS, userId));
+    if (!snap.exists() || snap.data().pin !== pin) {
+      _setAuthError('PIN incorect. Încearcă din nou.');
+      document.getElementById('pin-input').value = '';
+      document.getElementById('pin-input').focus();
+      return;
+    }
+    _doLoginSuccess(userId);
+  } catch(e) {
+    _setAuthError('Eroare de verificare. Încearcă din nou.');
   }
-  _doLoginSuccess(userId);
 };
 
-window.saveNewPin = () => {
+window.saveNewPin = async () => {
   const userId = _pendingUserId;
   const pin = (document.getElementById('pin-new').value || '').trim();
   const pinC = (document.getElementById('pin-confirm').value || '').trim();
   if (!userId) { _setAuthError('Selectează mai întâi utilizatorul.'); return; }
   if (!/^\d{6}$/.test(pin)) { _setAuthError('PIN-ul trebuie să fie exact 6 cifre.'); return; }
   if (pin !== pinC) { _setAuthError('PIN-urile nu coincid. Încearcă din nou.'); return; }
-  savePin(userId, pin);
-  _doLoginSuccess(userId);
-};
-
-window.adminResetEiPin = (userId, name) => {
-  if (!confirm(`Resetezi PIN-ul pentru ${name}?\nLa următoarea conectare va trebui să-și aleagă un PIN nou.`)) return;
-  clearPin(userId);
-  const msg = document.getElementById('ei-pin-reset-msg');
-  if (msg) {
-    msg.style.color = 'var(--green)';
-    msg.textContent = `✅ PIN resetat pentru ${name}.`;
-    setTimeout(() => { msg.textContent = ''; }, 4000);
+  try {
+    await setDoc(doc(db, COL_EI_PINS, userId), { pin, setatLa: serverTimestamp() });
+    _doLoginSuccess(userId);
+  } catch(e) {
+    _setAuthError('Eroare la salvare. Încearcă din nou.');
   }
 };
 
@@ -1319,7 +1297,7 @@ function showToast(msg, isError = false) {
  'filterAngajatiDropdown','showAngajatiDropdown','clearAngajatSearch','selectAngajat',
  'updateSizeOptions','distribuieHaine','filterIstoric','exportCSV','renderAngajati',
  'updateAddStocMarime','adaugaStoc','updateCorMarime','updateCorStocCurent','corecteazaStoc',
- 'trimiteComanda','updateComandaSummary','stergeIstoric','adminResetEiPin'
+ 'trimiteComanda','updateComandaSummary','stergeIstoric'
 ].forEach(name => { if (window[name]) window['_real_' + name] = window[name]; });
 
 </script>
