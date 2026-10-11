@@ -455,13 +455,6 @@ const ANGAJATI_FN_URL = 'https://us-central1-angajati-f1b01.cloudfunctions.net/a
 const ADMIN_RESET_PIN = '000000';
 // ─────────────────────────────────────────────────────────────
 
-// PIN helpers — stocate în localStorage per dispozitiv
-const PIN_NAMES = { madalina: 'Mădălina', alex: 'Alex' };
-const pinKey = (uid) => `eiselfing_pin_${uid}`;
-const hasPinSet = (uid) => !!localStorage.getItem(pinKey(uid));
-const getPin = (uid) => localStorage.getItem(pinKey(uid));
-const savePin = (uid, pin) => localStorage.setItem(pinKey(uid), pin);
-const clearPin = (uid) => localStorage.removeItem(pinKey(uid));
 
 // Conexiune
 function updateConnDot(online) {
