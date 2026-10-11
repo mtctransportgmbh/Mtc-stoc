@@ -180,11 +180,52 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
     <div id="operator-login">
       <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;">Selectează utilizatorul</p>
       <div style="display:flex;flex-direction:column;gap:10px;">
-        <button class="btn-operator" onclick="doOperatorLogin('operator1')">Cristi</button>
-        <button class="btn-operator" onclick="doOperatorLogin('operator2')">Mihaela</button>
-        <button class="btn-operator" onclick="doOperatorLogin('operator3')">Raluca</button>
+        <button class="btn-operator" id="btn-op-operator1" onclick="selectOperator('operator1')">Cristi</button>
+        <button class="btn-operator" id="btn-op-operator2" onclick="selectOperator('operator2')">Mihaela</button>
+        <button class="btn-operator" id="btn-op-operator3" onclick="selectOperator('operator3')">Raluca</button>
       </div>
-      <div class="auth-switch" onclick="toggleAdminLogin()">🔐 Sunt administratorul</div>
+
+      <!-- Login cu PIN (utilizatori care au PIN setat) -->
+      <div id="op-pin-row" style="display:none;margin-top:18px;">
+        <p style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:10px;letter-spacing:1px;">INTRODU PIN-UL TĂU DE 6 CIFRE</p>
+        <input type="password" id="op-pin-input" inputmode="numeric" maxlength="6"
+          placeholder="● ● ● ● ● ●"
+          style="width:100%;padding:14px;font-size:22px;text-align:center;border:1px solid var(--border);border-radius:3px;background:var(--bg);color:var(--text);letter-spacing:8px;box-sizing:border-box;"
+          onkeydown="if(event.key==='Enter')confirmOperatorPin()">
+        <button class="btn-primary" style="margin-top:10px;" onclick="confirmOperatorPin()">→ INTRĂ</button>
+      </div>
+
+      <!-- Setare PIN nou (prima conectare) -->
+      <div id="op-pin-setup-row" style="display:none;margin-top:18px;">
+        <p style="font-size:12px;color:var(--accent);text-align:center;margin-bottom:12px;letter-spacing:0.5px;">Prima conectare — alege un PIN de 6 cifre</p>
+        <input type="password" id="op-pin-new" inputmode="numeric" maxlength="6"
+          placeholder="PIN nou (6 cifre)"
+          style="width:100%;padding:12px;font-size:18px;text-align:center;border:1px solid var(--border);border-radius:3px;background:var(--bg);color:var(--text);letter-spacing:6px;box-sizing:border-box;margin-bottom:10px;">
+        <input type="password" id="op-pin-confirm" inputmode="numeric" maxlength="6"
+          placeholder="Confirmă PIN"
+          style="width:100%;padding:12px;font-size:18px;text-align:center;border:1px solid var(--border);border-radius:3px;background:var(--bg);color:var(--text);letter-spacing:6px;box-sizing:border-box;"
+          onkeydown="if(event.key==='Enter')saveOperatorPin()">
+        <button class="btn-primary" style="margin-top:10px;" onclick="saveOperatorPin()">✅ SALVEAZĂ PIN & INTRĂ</button>
+      </div>
+
+      <div class="auth-switch" onclick="toggleAdminLogin()" style="margin-top:16px;">🔐 Sunt administratorul</div>
+
+      <!-- Reset admin pentru operatori -->
+      <div style="text-align:center;margin-top:12px;">
+        <button onclick="showOpAdminReset()" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">🔧 Reset PIN (Admin)</button>
+      </div>
+      <div id="op-admin-reset-row" style="display:none;margin-top:12px;padding:16px;background:var(--surface2);border-radius:3px;border:1px solid var(--border);">
+        <select id="op-reset-user" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:3px;background:var(--bg);color:var(--text);margin-bottom:10px;font-size:13px;">
+          <option value="">— Selectează utilizatorul —</option>
+          <option value="operator1">Cristi</option>
+          <option value="operator2">Mihaela</option>
+          <option value="operator3">Raluca</option>
+        </select>
+        <input type="password" id="op-reset-pin-input" placeholder="PIN admin (6 cifre)"
+          style="width:100%;padding:10px;border:1px solid var(--border);border-radius:3px;background:var(--bg);color:var(--text);margin-bottom:10px;font-size:14px;text-align:center;letter-spacing:4px;box-sizing:border-box;"
+          onkeydown="if(event.key==='Enter')doOpAdminReset()">
+        <button class="btn-primary" style="background:var(--red);margin-top:0;" onclick="doOpAdminReset()">RESETEAZĂ PIN</button>
+      </div>
     </div>
 
     <div id="admin-login" style="display:none;">
@@ -649,34 +690,113 @@ function getMarimiArticol(h) {
 }
 
 // =============================================
-// AUTH
+// AUTH — PIN DINAMIC OPERATORI
 // =============================================
-window.toggleAdminLogin = () => {
-  const op = document.getElementById('operator-login');
-  const adm = document.getElementById('admin-login');
-  document.getElementById('auth-error').textContent = '';
-  const showingAdmin = adm.style.display !== 'none';
-  op.style.display = showingAdmin ? 'block' : 'none';
-  adm.style.display = showingAdmin ? 'none' : 'block';
-};
+const OP_ADMIN_RESET_PIN = '000000'; // Paul schimbă această valoare dacă vrea alt PIN admin
+const opPinKey = (uid) => `ruhstorf_pin_${uid}`;
+const opHasPinSet = (uid) => !!localStorage.getItem(opPinKey(uid));
+const opGetPin = (uid) => localStorage.getItem(opPinKey(uid));
+const opSavePin = (uid, pin) => localStorage.setItem(opPinKey(uid), pin);
+const opClearPin = (uid) => localStorage.removeItem(opPinKey(uid));
 
-window.doOperatorLogin = (opId) => {
+let _pendingOpId = null;
+
+function _setOpAuthError(msg, color) {
+  const el = document.getElementById('auth-error');
+  el.style.color = color || '';
+  el.textContent = msg;
+}
+
+function _doOperatorLoginSuccess(opId) {
   const op = OPERATORI[opId];
-  if (!op) return;
   localStorage.setItem('hermes_operator', JSON.stringify({ id: opId, ...op, role: 'operator' }));
   currentUser = { uid: opId, email: opId, isOperator: true };
   currentRole = 'operator';
   currentOperatorName = op.displayName;
   startApp();
+}
+
+window.selectOperator = (opId) => {
+  _pendingOpId = opId;
+  _setOpAuthError('');
+  document.querySelectorAll('.btn-operator').forEach(b => b.style.opacity = '0.45');
+  const btn = document.getElementById('btn-op-' + opId);
+  if (btn) btn.style.opacity = '1';
+
+  if (opHasPinSet(opId)) {
+    document.getElementById('op-pin-row').style.display = 'block';
+    document.getElementById('op-pin-setup-row').style.display = 'none';
+    document.getElementById('op-pin-input').value = '';
+    setTimeout(() => document.getElementById('op-pin-input').focus(), 50);
+  } else {
+    document.getElementById('op-pin-row').style.display = 'none';
+    document.getElementById('op-pin-setup-row').style.display = 'block';
+    document.getElementById('op-pin-new').value = '';
+    document.getElementById('op-pin-confirm').value = '';
+    setTimeout(() => document.getElementById('op-pin-new').focus(), 50);
+  }
+};
+
+window.confirmOperatorPin = () => {
+  const opId = _pendingOpId;
+  const pin = (document.getElementById('op-pin-input').value || '').trim();
+  if (!opId) { _setOpAuthError('Selectează mai întâi utilizatorul.'); return; }
+  if (!pin) { _setOpAuthError('Introdu PIN-ul.'); return; }
+  if (pin !== opGetPin(opId)) {
+    _setOpAuthError('PIN incorect. Încearcă din nou.');
+    document.getElementById('op-pin-input').value = '';
+    document.getElementById('op-pin-input').focus();
+    return;
+  }
+  _doOperatorLoginSuccess(opId);
+};
+
+window.saveOperatorPin = () => {
+  const opId = _pendingOpId;
+  const pin = (document.getElementById('op-pin-new').value || '').trim();
+  const pinC = (document.getElementById('op-pin-confirm').value || '').trim();
+  if (!opId) { _setOpAuthError('Selectează mai întâi utilizatorul.'); return; }
+  if (!/^\d{6}$/.test(pin)) { _setOpAuthError('PIN-ul trebuie să fie exact 6 cifre.'); return; }
+  if (pin !== pinC) { _setOpAuthError('PIN-urile nu coincid. Încearcă din nou.'); return; }
+  opSavePin(opId, pin);
+  _doOperatorLoginSuccess(opId);
+};
+
+window.showOpAdminReset = () => {
+  const row = document.getElementById('op-admin-reset-row');
+  row.style.display = row.style.display === 'none' ? 'block' : 'none';
+  document.getElementById('op-reset-pin-input').value = '';
+  _setOpAuthError('');
+};
+
+window.doOpAdminReset = () => {
+  const adminPin = (document.getElementById('op-reset-pin-input').value || '').trim();
+  const opId = document.getElementById('op-reset-user').value;
+  if (adminPin !== OP_ADMIN_RESET_PIN) { _setOpAuthError('PIN admin incorect.'); return; }
+  if (!opId) { _setOpAuthError('Selectează utilizatorul de resetat.'); return; }
+  opClearPin(opId);
+  document.getElementById('op-admin-reset-row').style.display = 'none';
+  document.getElementById('op-reset-pin-input').value = '';
+  document.getElementById('op-reset-user').value = '';
+  _setOpAuthError(`✅ PIN resetat pentru ${OPERATORI[opId].displayName}. La următoarea conectare va alege unul nou.`, 'var(--green)');
+};
+
+window.toggleAdminLogin = () => {
+  const op = document.getElementById('operator-login');
+  const adm = document.getElementById('admin-login');
+  _setOpAuthError('');
+  const showingAdmin = adm.style.display !== 'none';
+  op.style.display = showingAdmin ? 'block' : 'none';
+  adm.style.display = showingAdmin ? 'none' : 'block';
 };
 
 window.doAdminLogin = async () => {
   const email = document.getElementById('login-email').value.trim();
   const pass = document.getElementById('login-pass').value;
-  document.getElementById('auth-error').textContent = '';
-  if (!email || !pass) { document.getElementById('auth-error').textContent = 'Completează email și parola!'; return; }
+  _setOpAuthError('');
+  if (!email || !pass) { _setOpAuthError('Completează email și parola!'); return; }
   try { await signInWithEmailAndPassword(auth, email, pass); }
-  catch { document.getElementById('auth-error').textContent = 'Email sau parolă incorectă.'; }
+  catch { _setOpAuthError('Email sau parolă incorectă.'); }
 };
 document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') window.doAdminLogin(); });
 
@@ -691,6 +811,8 @@ onAuthStateChanged(auth, async (user) => {
     if (saved) {
       try {
         const op = JSON.parse(saved);
+        // Verifică că operatorul are PIN setat (protecție la sesiuni salvate vechi)
+        if (!opHasPinSet(op.id)) { localStorage.removeItem('hermes_operator'); throw new Error('no pin'); }
         currentUser = { uid: op.id, email: op.id, isOperator: true };
         currentRole = 'operator';
         currentOperatorName = op.displayName;

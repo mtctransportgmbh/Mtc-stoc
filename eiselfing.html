@@ -172,9 +172,51 @@ tr:hover td{background:var(--surface2);}
     <div class="auth-logo">MTC EISELFING</div>
     <div class="auth-subtitle">Gestiune stoc haine</div>
     <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;">Selectează utilizatorul</p>
-    <button class="btn-operator" onclick="doLogin('madalina')">Mădălina</button>
-    <button class="btn-operator" onclick="doLogin('alex')">Alex</button>
-    <div class="auth-error" id="auth-error"></div>
+    <button class="btn-operator" id="btn-user-madalina" onclick="selectUser('madalina')">Mădălina</button>
+    <button class="btn-operator" id="btn-user-alex" onclick="selectUser('alex')">Alex</button>
+
+    <!-- Login cu PIN (utilizatori care au deja PIN setat) -->
+    <div id="pin-row" style="display:none;margin-top:18px;">
+      <p style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:10px;">Introdu PIN-ul tău de 6 cifre</p>
+      <input type="password" id="pin-input" inputmode="numeric" maxlength="6"
+        placeholder="● ● ● ● ● ●"
+        style="width:100%;padding:14px;font-size:22px;text-align:center;border:1px solid var(--border);border-radius:4px;background:var(--surface2);color:var(--text);letter-spacing:8px;box-sizing:border-box;"
+        onkeydown="if(event.key==='Enter')confirmPin()">
+      <button class="btn-action" style="width:100%;margin-top:10px;font-size:15px;padding:13px;" onclick="confirmPin()">→ INTRĂ</button>
+    </div>
+
+    <!-- Setare PIN nou (prima conectare) -->
+    <div id="pin-setup-row" style="display:none;margin-top:18px;">
+      <p style="font-size:12px;color:var(--yellow);text-align:center;margin-bottom:12px;">Prima conectare — alege un PIN de 6 cifre</p>
+      <input type="password" id="pin-new" inputmode="numeric" maxlength="6"
+        placeholder="PIN nou (6 cifre)"
+        style="width:100%;padding:12px;font-size:18px;text-align:center;border:1px solid var(--border);border-radius:4px;background:var(--surface2);color:var(--text);letter-spacing:6px;box-sizing:border-box;margin-bottom:8px;"
+        onkeydown="if(event.key==='Enter')document.getElementById('pin-confirm').focus()">
+      <input type="password" id="pin-confirm" inputmode="numeric" maxlength="6"
+        placeholder="Confirmă PIN"
+        style="width:100%;padding:12px;font-size:18px;text-align:center;border:1px solid var(--border);border-radius:4px;background:var(--surface2);color:var(--text);letter-spacing:6px;box-sizing:border-box;"
+        onkeydown="if(event.key==='Enter')saveNewPin()">
+      <button class="btn-action" style="width:100%;margin-top:10px;background:var(--green);color:#000;font-size:14px;padding:13px;" onclick="saveNewPin()">✅ SALVEAZĂ PIN & INTRĂ</button>
+    </div>
+
+    <div class="auth-error" id="auth-error" style="margin-top:12px;"></div>
+
+    <!-- Reset admin (vizibil doar la click) -->
+    <div style="text-align:center;margin-top:20px;">
+      <button onclick="showAdminReset()" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">🔧 Reset PIN (Admin)</button>
+    </div>
+    <div id="admin-reset-row" style="display:none;margin-top:10px;padding:14px;border:1px solid var(--border);border-radius:4px;background:var(--surface2);">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:10px;">Resetează PIN-ul unui utilizator</p>
+      <select id="admin-reset-user" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);margin-bottom:8px;box-sizing:border-box;">
+        <option value="">— Selectează utilizatorul —</option>
+        <option value="madalina">Mădălina</option>
+        <option value="alex">Alex</option>
+      </select>
+      <input type="password" id="admin-reset-pin" maxlength="8" placeholder="PIN admin"
+        style="width:100%;padding:10px;font-size:16px;text-align:center;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);box-sizing:border-box;margin-bottom:8px;"
+        onkeydown="if(event.key==='Enter')doAdminReset()">
+      <button class="btn-action" style="width:100%;font-size:13px;padding:10px;background:var(--red);" onclick="doAdminReset()">RESETEAZĂ PIN</button>
+    </div>
   </div>
 </div>
 
@@ -393,7 +435,8 @@ tr:hover td{background:var(--surface2);}
 
 <script>
 // Proxy-uri pentru onclick înainte ca modulul să se încarce
-['doLogin','doLogout','showSection','openModal','closeModal',
+['selectUser','confirmPin','saveNewPin','showAdminReset','doAdminReset','doLogout',
+ 'showSection','openModal','closeModal',
  'filterAngajatiDropdown','showAngajatiDropdown','clearAngajatSearch','selectAngajat',
  'updateSizeOptions','distribuieHaine','filterIstoric','exportCSV','renderAngajati',
  'updateAddStocMarime','adaugaStoc','updateCorMarime','updateCorStocCurent','corecteazaStoc',
@@ -423,6 +466,19 @@ const app = initializeApp(firebaseConfig, 'eiselfing');
 const db = getFirestore(app);
 
 const ANGAJATI_FN_URL = 'https://us-central1-angajati-f1b01.cloudfunctions.net/angajatiEiselfing';
+
+// ── PIN admin pentru reset ────────────────────────────────────
+// Schimbă valoarea de mai jos cu PIN-ul tău de admin.
+const ADMIN_RESET_PIN = '000000';
+// ─────────────────────────────────────────────────────────────
+
+// PIN helpers — stocate în localStorage per dispozitiv
+const PIN_NAMES = { madalina: 'Mădălina', alex: 'Alex' };
+const pinKey = (uid) => `eiselfing_pin_${uid}`;
+const hasPinSet = (uid) => !!localStorage.getItem(pinKey(uid));
+const getPin = (uid) => localStorage.getItem(pinKey(uid));
+const savePin = (uid, pin) => localStorage.setItem(pinKey(uid), pin);
+const clearPin = (uid) => localStorage.removeItem(pinKey(uid));
 
 // Conexiune
 function updateConnDot(online) {
@@ -473,13 +529,85 @@ function getMarimiArticol(h) {
 // ============================================
 // AUTH
 // ============================================
-window.doLogin = (userId) => {
-  const names = { madalina: 'Mădălina', alex: 'Alex' };
-  const name = names[userId];
-  if (!name) return;
+let _pendingUserId = null;
+
+function _setAuthError(msg, color) {
+  const el = document.getElementById('auth-error');
+  el.style.color = color || '';
+  el.textContent = msg;
+}
+function _doLoginSuccess(userId) {
+  const name = PIN_NAMES[userId];
   localStorage.setItem('eiselfing_user', JSON.stringify({ id: userId, name }));
   currentUser = { id: userId, name };
   startApp();
+}
+
+window.selectUser = (userId) => {
+  _pendingUserId = userId;
+  _setAuthError('');
+  document.querySelectorAll('.btn-operator').forEach(b => b.style.opacity = '0.45');
+  const btn = document.getElementById('btn-user-' + userId);
+  if (btn) btn.style.opacity = '1';
+
+  if (hasPinSet(userId)) {
+    // Utilizator cu PIN deja setat — cere PIN
+    document.getElementById('pin-row').style.display = 'block';
+    document.getElementById('pin-setup-row').style.display = 'none';
+    document.getElementById('pin-input').value = '';
+    setTimeout(() => document.getElementById('pin-input').focus(), 50);
+  } else {
+    // Prima conectare — setare PIN nou
+    document.getElementById('pin-row').style.display = 'none';
+    document.getElementById('pin-setup-row').style.display = 'block';
+    document.getElementById('pin-new').value = '';
+    document.getElementById('pin-confirm').value = '';
+    setTimeout(() => document.getElementById('pin-new').focus(), 50);
+  }
+};
+
+window.confirmPin = () => {
+  const userId = _pendingUserId;
+  const pin = (document.getElementById('pin-input').value || '').trim();
+  if (!userId) { _setAuthError('Selectează mai întâi utilizatorul.'); return; }
+  if (!pin) { _setAuthError('Introdu PIN-ul.'); return; }
+  if (pin !== getPin(userId)) {
+    _setAuthError('PIN incorect. Încearcă din nou.');
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-input').focus();
+    return;
+  }
+  _doLoginSuccess(userId);
+};
+
+window.saveNewPin = () => {
+  const userId = _pendingUserId;
+  const pin = (document.getElementById('pin-new').value || '').trim();
+  const pinC = (document.getElementById('pin-confirm').value || '').trim();
+  if (!userId) { _setAuthError('Selectează mai întâi utilizatorul.'); return; }
+  if (!/^\d{6}$/.test(pin)) { _setAuthError('PIN-ul trebuie să fie exact 6 cifre.'); return; }
+  if (pin !== pinC) { _setAuthError('PIN-urile nu coincid. Încearcă din nou.'); return; }
+  savePin(userId, pin);
+  _doLoginSuccess(userId);
+};
+
+window.showAdminReset = () => {
+  const row = document.getElementById('admin-reset-row');
+  row.style.display = row.style.display === 'none' ? 'block' : 'none';
+  document.getElementById('admin-reset-pin').value = '';
+  _setAuthError('');
+};
+
+window.doAdminReset = () => {
+  const adminPin = (document.getElementById('admin-reset-pin').value || '').trim();
+  const userId = document.getElementById('admin-reset-user').value;
+  if (adminPin !== ADMIN_RESET_PIN) { _setAuthError('PIN admin incorect.'); return; }
+  if (!userId) { _setAuthError('Selectează utilizatorul de resetat.'); return; }
+  clearPin(userId);
+  document.getElementById('admin-reset-row').style.display = 'none';
+  document.getElementById('admin-reset-pin').value = '';
+  document.getElementById('admin-reset-user').value = '';
+  _setAuthError(`✅ PIN resetat pentru ${PIN_NAMES[userId]}. La următoarea conectare va alege unul nou.`, 'var(--green)');
 };
 
 window.doLogout = () => {
@@ -948,26 +1076,39 @@ window.confirmarePrimire = async (id) => {
   if (!c) return;
   if (!confirm(`Confirmi primirea comenzii cu ${(c.items || []).length} articol(e)?\nStocul Eiselfing va fi actualizat.`)) return;
   try {
-    const b = writeBatch(db);
     const negasite = [];
-    (c.items || []).forEach(it => {
+    // Actualizare stoc — fiecare articol individual, cu fallback la setDoc dacă nu există
+    for (const it of (c.items || [])) {
       // Caută articolul în stoc_eiselfing după denumire (IDs diferite față de stoc Ruhstorf)
       const stocEntry = Object.values(stocData).find(s =>
         s.denumire && it.denumire &&
         s.denumire.trim().toLowerCase() === it.denumire.trim().toLowerCase()
       );
-      if (!stocEntry) { negasite.push(it.denumire); return; }
+      if (!stocEntry) { negasite.push(it.denumire); continue; }
       const fara = it.marime === '—';
       const ref = doc(db, COL_STOC, stocEntry.id);
-      if (fara) b.update(ref, { cantitate: increment(it.qty) });
-      else b.update(ref, { [`marimi.${it.marime}`]: increment(it.qty) });
-    });
-    b.update(doc(db, COL_COMENZI, id), {
+      if (fara) {
+        try {
+          await updateDoc(ref, { cantitate: increment(it.qty) });
+        } catch(eUpd) {
+          // Documentul nu există — creăm cu setDoc
+          await setDoc(ref, { cantitate: it.qty, denumire: it.denumire }, { merge: true });
+        }
+      } else {
+        try {
+          await updateDoc(ref, { [`marimi.${it.marime}`]: increment(it.qty) });
+        } catch(eUpd) {
+          // Documentul nu există — creăm cu setDoc
+          await setDoc(ref, { marimi: { [it.marime]: it.qty }, denumire: it.denumire }, { merge: true });
+        }
+      }
+    }
+    // Marchează comanda ca receptionată
+    await updateDoc(doc(db, COL_COMENZI, id), {
       status: 'receptionata',
       receptionatDe: currentUser ? currentUser.name : 'Eiselfing',
       receptionatLa: serverTimestamp(),
     });
-    await b.commit();
     if (negasite.length) {
       showToast(`✅ Confirmat! ⚠ Negăsite în stoc Eiselfing: ${negasite.join(', ')}`, false);
     } else {
@@ -1137,11 +1278,7 @@ window.trimiteComanda = async () => {
     if (obs) { body += `\nObservații: ${obs}`; }
     body += `\n\nVezi comanda în aplicație la tab-ul 📬 Comenzi.`;
 
-    const subject = `[MTC Eiselfing] Comandă haine ${dataStr} — ${currentUser.name}`;
-    if (window.emailjs && typeof EMAILJS_PUBLIC_KEY !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
-      window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { subject, message: body })
-        .catch(err => console.warn('EmailJS eiselfing:', err));
-    }
+    // Emailul se trimite automat din index.html (Ruhstorf) prin listener realtime — nu trimitem de 2 ori
 
     // Reset formular
     inputs.forEach(inp => { inp.value = '0'; inp.classList.remove('has-value'); });
@@ -1177,7 +1314,8 @@ function showToast(msg, isError = false) {
 }
 
 // Înregistrează _real_ pentru proxy-uri
-['doLogin','doLogout','showSection','openModal','closeModal',
+['selectUser','confirmPin','saveNewPin','showAdminReset','doAdminReset','doLogout',
+ 'showSection','openModal','closeModal',
  'filterAngajatiDropdown','showAngajatiDropdown','clearAngajatSearch','selectAngajat',
  'updateSizeOptions','distribuieHaine','filterIstoric','exportCSV','renderAngajati',
  'updateAddStocMarime','adaugaStoc','updateCorMarime','updateCorStocCurent','corecteazaStoc',
