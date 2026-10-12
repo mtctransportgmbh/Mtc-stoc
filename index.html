@@ -470,6 +470,13 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
           <p style="font-size:11px;color:var(--muted);margin-top:12px;">Backup-ul se face automat la fiecare distribuire sau modificare de stoc. Se păstrează ultimele 10 backup-uri în Firebase.</p>
         </div>
 
+        <div class="card">
+          <div class="card-title" style="font-size:18px;">🔄 SINCRONIZARE EISELFING</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Copiază structura articolelor din Ruhstorf în Eiselfing (stoc 0 pentru articolele noi). Articolele deja existente rămân neschimbate.</p>
+          <p style="font-size:11px;color:var(--muted);margin-bottom:16px;">💡 Articolele noi se sincronizează automat. Folosește acest buton dacă apar neconcordanțe.</p>
+          <button class="btn-action" style="width:100%;font-size:17px;padding:13px;" onclick="sincronizeazaEiselfing()">🔄 SINCRONIZEAZĂ ACUM</button>
+        </div>
+
       </div>
     </div>
 
@@ -608,7 +615,7 @@ function _makeProxy(name) {
 ['toggleAdminLogin','doAdminLogin','doLogout','doOperatorLogin','openModal','closeModal','showSection',
  'clearAngajatSearch','showAngajatiDropdown','filterAngajatiDropdown','selectAngajat',
  'distribuieHaine','adaugaAngajat','stergeAngajat','editeazaAngajat','salveazaAngajat',
- 'adaugaStoc','adaugaHaina','stergeHaina','corecteazaStoc','updateStocModalMarime',
+ 'adaugaStoc','adaugaHaina','stergeHaina','sincronizeazaEiselfing','corecteazaStoc','updateStocModalMarime',
  'updateCorectareMarime','updateCorectareStocCurent','updateHainaMarimiInput','updateSizeOptions',
  'showStocScazut','filterIstoric','renderAdaugari','renderAngajati','renderRaport',
  'exportCSV','exportCSVAdaugari','exportCSVRaport',
@@ -1437,18 +1444,59 @@ window.adaugaHaina = async () => {
     const marimi={};MARIMI.forEach(m=>marimi[m]=0);docData.marimi=marimi;docData.tipMarimi='standard';
   }
   await addDoc(collection(db,'stoc'),docData);
+  // Sincronizare automată: crează același articol (stoc 0) și la Eiselfing
+  try { await addDoc(collection(db,'stoc_eiselfing'),docData); } catch(e) { console.warn('Sync Eiselfing eșuat:',e); }
   closeModal('modal-add-haina');
   document.getElementById('haina-name').value='';
   document.getElementById('haina-marimi-custom').value='';
   document.getElementById('haina-tip-marimi').value='standard';
   document.getElementById('haina-marimi-custom-row').style.display='none';
-  showToast(`Articol "${name}" creat!`);
+  showToast(`Articol "${name}" creat (sincronizat Ruhstorf + Eiselfing)!`);
 };
 
 window.stergeHaina = async (id,denumire) => {
-  if (!confirm(`Ștergi "${denumire}"?`)) return;
+  if (!confirm(`Ștergi "${denumire}"?\nArticolul va fi șters și din stocul Eiselfing.`)) return;
   await deleteDoc(doc(db,'stoc',id));
-  showToast(`"${denumire}" șters.`);
+  // Șterge și din stoc_eiselfing (caută după denumire)
+  try {
+    const q=query(collection(db,'stoc_eiselfing'),where('denumire','==',denumire));
+    const snap=await getDocs(q);
+    for (const d of snap.docs) await deleteDoc(d.ref);
+  } catch(e) { console.warn('Sync delete Eiselfing eșuat:',e); }
+  showToast(`"${denumire}" șters din Ruhstorf și Eiselfing.`);
+};
+
+// =============================================
+// SINCRONIZARE EISELFING (admin)
+// =============================================
+window.sincronizeazaEiselfing = async () => {
+  if (!confirm('Sincronizează structura articolelor Ruhstorf → Eiselfing?\n\nArticolele noi vor fi create la Eiselfing cu stoc 0.\nArticolele deja existente NU sunt modificate.\nArticolele șterse din Ruhstorf NU se șterg automat din Eiselfing.')) return;
+  try {
+    const eisSnap = await getDocs(collection(db,'stoc_eiselfing'));
+    const existingNames = new Set(eisSnap.docs.map(d => (d.data().denumire||'').trim().toLowerCase()));
+    let creat=0, sarit=0;
+    for (const [, rh] of Object.entries(stocData)) {
+      const nameLower=(rh.denumire||'').trim().toLowerCase();
+      if (!nameLower) continue;
+      if (existingNames.has(nameLower)) { sarit++; continue; }
+      let docData={denumire:rh.denumire,creatLa:serverTimestamp()};
+      const fara=rh.tipMarimi==='fara'||(!rh.marimi&&rh.cantitate!==undefined);
+      if (fara) { docData.cantitate=0; docData.tipMarimi='fara'; }
+      else if (rh.tipMarimi==='numeric') {
+        const ml=rh.marimiOrdine||Object.keys(rh.marimi||{});
+        const marimi={}; ml.forEach(m=>marimi[m]=0);
+        docData.marimi=marimi; docData.tipMarimi='numeric';
+        if (rh.marimiOrdine) docData.marimiOrdine=rh.marimiOrdine;
+      } else {
+        const marimi={}; MARIMI.forEach(m=>marimi[m]=0);
+        docData.marimi=marimi; docData.tipMarimi='standard';
+      }
+      await addDoc(collection(db,'stoc_eiselfing'),docData);
+      existingNames.add(nameLower);
+      creat++;
+    }
+    showToast(`✅ Sincronizat: ${creat} articole noi la Eiselfing, ${sarit} deja existente.`);
+  } catch(e) { showToast('Eroare sincronizare: '+e.message,true); }
 };
 
 // =============================================
@@ -1939,6 +1987,18 @@ window.trimitEmailRaspuns = (id) => {
 };
 
 // Listener realtime pentru comenzi noi — actualizează badge + trimite email automat
+// Dedup cross-tab: dacă index.html e deschis în 2 taburi, emailul se trimite o singură dată
+function _claimEmailSend(docId) {
+  // Returnează true dacă ACEST tab e primul care încearcă să trimită (și îl marchează)
+  try {
+    const key = `mtc_email_${docId}`;
+    const existing = localStorage.getItem(key);
+    if (existing && Date.now() - parseInt(existing) < 60000) return false; // deja trimis în ultimul minut
+    localStorage.setItem(key, Date.now().toString());
+    return true;
+  } catch { return true; } // dacă localStorage nu e disponibil, trimite oricum
+}
+
 function startComenziListener() {
   let firstLoad = true;
   onSnapshot(query(collection(db,'comenzi'), where('status','==','noua')), (snap) => {
@@ -1951,6 +2011,7 @@ function startComenziListener() {
     if (!firstLoad) {
       snap.docChanges().forEach(change => {
         if (change.type === 'added') {
+          if (!_claimEmailSend(change.doc.id)) return; // alt tab a trimis deja
           const c = change.doc.data();
           const itemsText = (c.items||[]).map(it =>
             `• ${it.denumire}${it.marime==='—'?'':' '+it.marime}: ${it.qty} buc`
@@ -2006,7 +2067,7 @@ function downloadCSV(rows,filename){
 ['toggleAdminLogin','doAdminLogin','doLogout','doOperatorLogin','openModal','closeModal','showSection',
  'clearAngajatSearch','showAngajatiDropdown','filterAngajatiDropdown','selectAngajat',
  'distribuieHaine','adaugaAngajat','stergeAngajat','editeazaAngajat','salveazaAngajat',
- 'adaugaStoc','adaugaHaina','stergeHaina','corecteazaStoc','updateStocModalMarime',
+ 'adaugaStoc','adaugaHaina','stergeHaina','sincronizeazaEiselfing','corecteazaStoc','updateStocModalMarime',
  'updateCorectareMarime','updateCorectareStocCurent','updateHainaMarimiInput','updateSizeOptions',
  'showStocScazut','filterIstoric','renderAdaugari','renderAngajati','renderRaport',
  'exportCSV','exportCSVAdaugari','exportCSVRaport',

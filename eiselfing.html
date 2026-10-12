@@ -150,6 +150,10 @@ tr:hover td{background:var(--surface2);}
 #toast.show{transform:translateX(0);}
 #toast.error{border-left-color:var(--red);}
 
+/* RAPORT */
+.badge-size{display:inline-block;background:var(--surface2);border:1px solid var(--border);padding:2px 8px;border-radius:3px;font-family:var(--font-mono);font-size:11px;}
+.qty-tag{display:inline-block;background:var(--surface2);border:1px solid var(--border);padding:2px 8px;border-radius:3px;font-family:var(--font-mono);font-size:12px;}
+
 /* LOADING */
 .loading{text-align:center;padding:60px;color:var(--muted);font-size:13px;letter-spacing:2px;text-transform:uppercase;}
 .dot-pulse::after{content:'';animation:dots 1.5s infinite;}
@@ -223,6 +227,7 @@ tr:hover td{background:var(--surface2);}
     <div class="nav-tab" onclick="showSection('istoric',this)">📋 Istoric</div>
     <div class="nav-tab" onclick="showSection('angajati',this)">👥 Angajați</div>
     <div class="nav-tab" id="tab-comanda" onclick="showSection('comanda',this)">🛒 Comandă Stoc</div>
+    <div class="nav-tab" onclick="showSection('raport',this)">📊 Raport Persoane</div>
   </div>
 
   <div class="content">
@@ -344,6 +349,20 @@ tr:hover td{background:var(--surface2);}
       </div>
     </div>
 
+    <!-- RAPORT PERSOANE -->
+    <div class="section" id="section-raport">
+      <div class="section-header">
+        <div class="section-title">RAPORT PERSOANE</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <select class="form-select" style="width:auto;" id="raport-ei-filter-angajat" onchange="renderRaportEi()">
+            <option value="">Toți angajații</option>
+          </select>
+          <button class="btn-secondary" onclick="exportCSVRaportEi()">⬇ Export CSV</button>
+        </div>
+      </div>
+      <div id="raport-ei-content"></div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /app -->
 
@@ -423,7 +442,8 @@ tr:hover td{background:var(--surface2);}
  'filterAngajatiDropdown','showAngajatiDropdown','clearAngajatSearch','selectAngajat',
  'updateSizeOptions','distribuieHaine','filterIstoric','exportCSV','renderAngajati',
  'updateAddStocMarime','adaugaStoc','updateCorMarime','updateCorStocCurent','corecteazaStoc',
- 'trimiteComanda','updateComandaSummary'
+ 'confirmarePrimire','trimiteComanda','updateComandaSummary',
+ 'renderRaportEi','exportCSVRaportEi'
 ].forEach(name => {
   window[name] = function(...args) {
     if (window['_real_' + name]) return window['_real_' + name](...args);
@@ -933,6 +953,7 @@ function loadIstoric() {
   unsubIstoric = onSnapshot(query(collection(db, COL_ISTORIC), orderBy('data', 'desc'), limit(200)), (snap) => {
     istoricData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderIstoric();
+    populateRaportEiFilter();
   });
 }
 
@@ -996,6 +1017,82 @@ window.exportCSV = () => {
 };
 
 // ============================================
+// RAPORT PERSOANE EISELFING
+// ============================================
+function populateRaportEiFilter() {
+  const sel = document.getElementById('raport-ei-filter-angajat');
+  if (!sel) return;
+  const cur = sel.value;
+  const names = [...new Set(istoricData.map(r => r.angajatNume).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Toți angajații</option>' +
+    names.map(n => `<option value="${n}"${n === cur ? ' selected' : ''}>${n}</option>`).join('');
+}
+
+window.renderRaportEi = () => {
+  const div = document.getElementById('raport-ei-content');
+  if (!div) return;
+  const filtru = document.getElementById('raport-ei-filter-angajat')?.value || '';
+  const grupate = {};
+  istoricData.forEach(r => {
+    if (filtru && r.angajatNume !== filtru) return;
+    const key = r.angajatId || r.angajatNume;
+    if (!grupate[key]) grupate[key] = { nume: r.angajatNume, items: [] };
+    grupate[key].items.push(r);
+  });
+  const sortati = Object.values(grupate).sort((a, b) => a.nume.localeCompare(b.nume));
+  if (!sortati.length) { div.innerHTML = '<div class="loading">Nicio distribuire înregistrată.</div>'; return; }
+  div.innerHTML = sortati.map(ang => {
+    const rezumat = {}; let totalBuc = 0;
+    ang.items.forEach(item => {
+      const k = `${item.hainaDenumire}||${item.marime}`;
+      if (!rezumat[k]) rezumat[k] = { haina: item.hainaDenumire, marime: item.marime, cantitate: 0 };
+      rezumat[k].cantitate += (item.cantitate || 1); totalBuc += (item.cantitate || 1);
+    });
+    const randuri = Object.values(rezumat).sort((a, b) => a.haina.localeCompare(b.haina)).map(r => {
+      const m = r.marime && r.marime !== '—' ? `<span class="badge-size">${r.marime}</span>` : '<span style="color:var(--muted)">—</span>';
+      return `<tr>
+        <td style="padding:8px 18px;font-weight:500;">${r.haina}</td>
+        <td style="padding:8px 18px;">${m}</td>
+        <td style="padding:8px 18px;"><span class="qty-tag">${r.cantitate}</span></td>
+      </tr>`;
+    }).join('');
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:12px;overflow:hidden;">
+      <div style="background:var(--surface2);padding:12px 18px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-family:var(--font-display);font-size:20px;letter-spacing:2px;">${ang.nume}</div>
+        <div style="font-family:var(--font-mono);font-size:12px;color:var(--accent);">TOTAL: ${totalBuc} buc · ${ang.items.length} distribuiri</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr style="background:var(--surface2);border-bottom:1px solid var(--border);">
+          <th style="padding:8px 18px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Articol</th>
+          <th style="padding:8px 18px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Mărime</th>
+          <th style="padding:8px 18px;text-align:left;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Cantitate</th>
+        </tr></thead>
+        <tbody>${randuri}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+};
+
+window.exportCSVRaportEi = () => {
+  const filtru = document.getElementById('raport-ei-filter-angajat')?.value || '';
+  const rows = [['Angajat', 'Articol', 'Marime', 'Cantitate']];
+  const grupate = {};
+  istoricData.forEach(r => {
+    if (filtru && r.angajatNume !== filtru) return;
+    const k = `${r.angajatId}||${r.hainaDenumire}||${r.marime}`;
+    if (!grupate[k]) grupate[k] = { nume: r.angajatNume, haina: r.hainaDenumire, marime: r.marime, cantitate: 0 };
+    grupate[k].cantitate += (r.cantitate || 1);
+  });
+  Object.values(grupate).sort((a, b) => a.nume.localeCompare(b.nume))
+    .forEach(r => rows.push([r.nume, r.haina, r.marime, r.cantitate]));
+  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+  a.download = `raport_persoane_eiselfing_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+};
+
+// ============================================
 // COMENZI ONORATE — sosite de la Ruhstorf
 // ============================================
 function startOnorateLisener() {
@@ -1047,41 +1144,73 @@ window.confirmarePrimire = async (id) => {
   if (!c) return;
   if (!confirm(`Confirmi primirea comenzii cu ${(c.items || []).length} articol(e)?\nStocul Eiselfing va fi actualizat.`)) return;
   try {
-    const negasite = [];
-    // Actualizare stoc — fiecare articol individual, cu fallback la setDoc dacă nu există
+    // Grupează itemii pe denumire (mai multe mărimi pentru același articol)
+    const grouped = {};
     for (const it of (c.items || [])) {
-      // Caută articolul în stoc_eiselfing după denumire (IDs diferite față de stoc Ruhstorf)
+      const key = (it.denumire || '').trim().toLowerCase();
+      if (!grouped[key]) grouped[key] = { denumire: it.denumire, items: [] };
+      grouped[key].items.push(it);
+    }
+
+    const autocreate = [];
+    for (const [nameLower, group] of Object.entries(grouped)) {
       const stocEntry = Object.values(stocData).find(s =>
-        s.denumire && it.denumire &&
-        s.denumire.trim().toLowerCase() === it.denumire.trim().toLowerCase()
+        s.denumire && s.denumire.trim().toLowerCase() === nameLower
       );
-      if (!stocEntry) { negasite.push(it.denumire); continue; }
-      const fara = it.marime === '—';
-      const ref = doc(db, COL_STOC, stocEntry.id);
-      if (fara) {
-        try {
-          await updateDoc(ref, { cantitate: increment(it.qty) });
-        } catch(eUpd) {
-          // Documentul nu există — creăm cu setDoc
-          await setDoc(ref, { cantitate: it.qty, denumire: it.denumire }, { merge: true });
+
+      if (stocEntry) {
+        // Articolul există — incrementăm fiecare mărime
+        for (const it of group.items) {
+          const fara = it.marime === '—';
+          const ref = doc(db, COL_STOC, stocEntry.id);
+          if (fara) {
+            try { await updateDoc(ref, { cantitate: increment(it.qty) }); }
+            catch { await setDoc(ref, { cantitate: it.qty, denumire: stocEntry.denumire }, { merge: true }); }
+          } else {
+            try { await updateDoc(ref, { [`marimi.${it.marime}`]: increment(it.qty) }); }
+            catch { await setDoc(ref, { marimi: { [it.marime]: it.qty }, denumire: stocEntry.denumire }, { merge: true }); }
+          }
         }
       } else {
-        try {
-          await updateDoc(ref, { [`marimi.${it.marime}`]: increment(it.qty) });
-        } catch(eUpd) {
-          // Documentul nu există — creăm cu setDoc
-          await setDoc(ref, { marimi: { [it.marime]: it.qty }, denumire: it.denumire }, { merge: true });
+        // Articolul nu există în stoc_eiselfing — îl creăm automat cu cantitățile primite
+        const faraMarimi = group.items.every(it => it.marime === '—');
+        if (faraMarimi) {
+          const totalQty = group.items.reduce((s, it) => s + it.qty, 0);
+          await addDoc(collection(db, COL_STOC), {
+            denumire: (group.denumire || '').trim().toUpperCase(),
+            cantitate: totalQty,
+            tipMarimi: 'fara',
+            creatLa: serverTimestamp(),
+          });
+        } else {
+          const marimiMap = {};
+          for (const it of group.items) {
+            marimiMap[it.marime] = (marimiMap[it.marime] || 0) + it.qty;
+          }
+          const marimiKeys = Object.keys(marimiMap);
+          const tipMarimi = marimiKeys.every(m => MARIMI.includes(m)) ? 'standard' : 'numeric';
+          const docData = {
+            denumire: (group.denumire || '').trim().toUpperCase(),
+            marimi: marimiMap,
+            tipMarimi,
+            creatLa: serverTimestamp(),
+          };
+          if (tipMarimi === 'numeric') docData.marimiOrdine = marimiKeys;
+          await addDoc(collection(db, COL_STOC), docData);
         }
+        autocreate.push(group.denumire);
       }
     }
+
     // Marchează comanda ca receptionată
     await updateDoc(doc(db, COL_COMENZI, id), {
       status: 'receptionata',
       receptionatDe: currentUser ? currentUser.name : 'Eiselfing',
       receptionatLa: serverTimestamp(),
     });
-    if (negasite.length) {
-      showToast(`✅ Confirmat! ⚠ Negăsite în stoc Eiselfing: ${negasite.join(', ')}`, false);
+
+    if (autocreate.length) {
+      showToast(`✅ Confirmat! Articole noi create în stoc: ${autocreate.join(', ')}`);
     } else {
       showToast('✅ Primire confirmată! Stoc Eiselfing actualizat.');
     }
@@ -1268,6 +1397,7 @@ window.showSection = (id, tab) => {
   document.getElementById('section-' + id)?.classList.add('active');
   tab?.classList.add('active');
   if (id === 'comanda') { loadStocDepozit(); startOnorateLisener(); }
+  if (id === 'raport') { populateRaportEiFilter(); renderRaportEi(); }
 };
 
 window.openModal = (id) => { document.getElementById(id)?.classList.add('open'); };
@@ -1290,7 +1420,8 @@ function showToast(msg, isError = false) {
  'filterAngajatiDropdown','showAngajatiDropdown','clearAngajatSearch','selectAngajat',
  'updateSizeOptions','distribuieHaine','filterIstoric','exportCSV','renderAngajati',
  'updateAddStocMarime','adaugaStoc','updateCorMarime','updateCorStocCurent','corecteazaStoc',
- 'trimiteComanda','updateComandaSummary','stergeIstoric'
+ 'confirmarePrimire','trimiteComanda','updateComandaSummary','stergeIstoric',
+ 'renderRaportEi','exportCSVRaportEi'
 ].forEach(name => { if (window[name]) window['_real_' + name] = window[name]; });
 
 </script>
