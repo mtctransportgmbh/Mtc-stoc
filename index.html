@@ -334,7 +334,9 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
     <div class="section admin-only" id="section-angajati">
       <div class="section-header">
         <div class="section-title">ANGAJAȚI</div>
-        <button class="btn-action" onclick="openModal('modal-add-angajat')">+ ANGAJAT NOU</button>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:4px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:var(--muted);">
+        👥 Lista se preia automat din baza centrală de angajați MTC (locația <strong style="color:var(--accent)">Ruhstorf</strong>). Modificările se fac din aplicația <em>Angajați MTC</em>.
       </div>
       <div class="search-bar">
         <input class="search-input" type="text" id="search-angajati" placeholder="Caută angajat..." oninput="renderAngajati()">
@@ -559,30 +561,7 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
   </div>
 </div>
 
-<!-- Add Angajat -->
-<div class="modal-overlay" id="modal-add-angajat">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title">ANGAJAT NOU</div><button class="modal-close" onclick="closeModal('modal-add-angajat')">✕</button></div>
-    <div class="modal-body">
-      <div class="form-field"><label class="form-label">Nume Prenume</label><input type="text" class="form-input" id="ang-name" placeholder="ex: Popescu Ion"></div>
-      <div class="form-field"><label class="form-label">Departament (opțional)</label><input type="text" class="form-input" id="ang-dept" placeholder="ex: Depozit..."></div>
-    </div>
-    <div class="modal-footer"><button class="btn-secondary" onclick="closeModal('modal-add-angajat')">Anulează</button><button class="btn-action" onclick="adaugaAngajat()">ADAUGĂ</button></div>
-  </div>
-</div>
-
-<!-- Edit Angajat -->
-<div class="modal-overlay" id="modal-edit-angajat">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title">EDITEAZĂ ANGAJAT</div><button class="modal-close" onclick="closeModal('modal-edit-angajat')">✕</button></div>
-    <div class="modal-body">
-      <input type="hidden" id="edit-ang-id">
-      <div class="form-field"><label class="form-label">Nume Prenume</label><input type="text" class="form-input" id="edit-ang-name"></div>
-      <div class="form-field"><label class="form-label">Departament (opțional)</label><input type="text" class="form-input" id="edit-ang-dept"></div>
-    </div>
-    <div class="modal-footer"><button class="btn-secondary" onclick="closeModal('modal-edit-angajat')">Anulează</button><button class="btn-action" onclick="salveazaAngajat()">SALVEAZĂ</button></div>
-  </div>
-</div>
+<!-- Angajat modals removed — management centralized in Angajați MTC app -->
 
 <!-- Stoc Scazut Modal -->
 <div class="modal-overlay" id="modal-stoc-scazut">
@@ -614,7 +593,7 @@ function _makeProxy(name) {
 }
 ['toggleAdminLogin','doAdminLogin','doLogout','doOperatorLogin','openModal','closeModal','showSection',
  'clearAngajatSearch','showAngajatiDropdown','filterAngajatiDropdown','selectAngajat',
- 'distribuieHaine','adaugaAngajat','stergeAngajat','editeazaAngajat','salveazaAngajat',
+ 'distribuieHaine',
  'adaugaStoc','adaugaHaina','stergeHaina','sincronizeazaEiselfing','corecteazaStoc','updateStocModalMarime',
  'updateCorectareMarime','updateCorectareStocCurent','updateHainaMarimiInput','updateSizeOptions',
  'showStocScazut','filterIstoric','renderAdaugari','renderAngajati','renderRaport',
@@ -690,6 +669,7 @@ let appStarted = false;
 const MARIMI = ['XS','S','M','L','XL'];
 const FARA_MARIMI = ['SAPCA','CACIULA'];
 const PRAG_SCAZUT = 7;
+const ANGAJATI_RUHSTORF_URL = 'https://us-central1-angajati-f1b01.cloudfunctions.net/angajatiRuhstorf';
 const OPERATORI = {
   operator1: { displayName: 'Cristi' },
   operator2: { displayName: 'Mihaela' },
@@ -1017,14 +997,34 @@ function updateStocSelects() {
 // ANGAJATI
 // =============================================
 function loadAngajati() {
-  if (unsubAngajati) unsubAngajati();
-  unsubAngajati = onSnapshot(query(collection(db,'angajati'),orderBy('nume')), snap => {
-    angajatiData = snap.docs.map(d=>({id:d.id,...d.data()}));
-    renderAngajati();
-    populateAngajatiSelect();
-    populateRaportFilter();
-    renderStats();
-  });
+  if (unsubAngajati) { unsubAngajati(); unsubAngajati = null; }
+
+  async function fetchAngajati() {
+    try {
+      const resp = await fetch(ANGAJATI_RUHSTORF_URL);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      // Normalizare: numeComplet → nume (pentru compatibilitate cu restul codului)
+      angajatiData = (data.angajati || []).map(a => ({
+        ...a,
+        nume: a.numeComplet || a.nume || '—'
+      }));
+      renderAngajati();
+      populateAngajatiSelect();
+      populateRaportFilter();
+      renderStats();
+    } catch(err) {
+      console.error('Eroare angajați Ruhstorf:', err);
+      const grid = document.getElementById('angajati-grid');
+      if (grid && !angajatiData.length) {
+        grid.innerHTML = '<div class="loading" style="color:var(--red);">⚠ Nu s-au putut încărca angajații — verifică Cloud Function angajatiRuhstorf</div>';
+      }
+    }
+  }
+
+  fetchAngajati();
+  const _iv = setInterval(fetchAngajati, 60000);
+  unsubAngajati = () => clearInterval(_iv);
 }
 
 window.renderAngajati = function() {
@@ -1038,10 +1038,6 @@ window.renderAngajati = function() {
     const deptEsc = (a.departament||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     return `<div class="angajat-card">
       <div><div class="angajat-name">${a.nume}</div>${a.departament?`<div class="angajat-dept">${a.departament}</div>`:''}</div>
-      ${currentRole==='admin'?`<div style="display:flex;gap:6px;">
-        <button style="background:var(--surface2);border:1px solid var(--border);color:var(--accent);padding:6px 10px;border-radius:3px;cursor:pointer;font-size:12px;" onclick="editeazaAngajat('${a.id}','${numeEsc}','${deptEsc}')">✏</button>
-        <button class="btn-danger" onclick="stergeAngajat('${a.id}','${numeEsc}')">✕</button>
-      </div>`:''}
     </div>`;
   }).join('');
 }
@@ -1232,6 +1228,7 @@ function loadIstoric() {
     istoricData=snap.docs.map(d=>({id:d.id,...d.data()}));
     renderIstoric();
     loadRecentDistribuiri();
+    populateRaportFilter();
   });
 }
 
@@ -1506,18 +1503,22 @@ function populateRaportFilter() {
   const sel=document.getElementById('raport-filter-angajat');
   if (!sel) return;
   const cur=sel.value;
-  sel.innerHTML='<option value="">Toți angajații</option>'+angajatiData.map(a=>`<option value="${a.id}"${a.id===cur?' selected':''}>${a.nume}</option>`).join('');
+  // Combină: angajații activi + oricine apare în istoric (date vechi)
+  const dinIstoric=[...new Set(istoricData.map(r=>r.angajatNume).filter(Boolean))];
+  const dinAngajati=angajatiData.map(a=>a.nume).filter(Boolean);
+  const names=[...new Set([...dinIstoric,...dinAngajati])].sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML='<option value="">Toți angajații</option>'+names.map(n=>`<option value="${n}"${n===cur?' selected':''}>${n}</option>`).join('');
 }
 
 window.renderRaport = () => {
   const div=document.getElementById('raport-content');
   if (!div) return;
-  const filterId=document.getElementById('raport-filter-angajat')?.value||'';
+  const filterNume=document.getElementById('raport-filter-angajat')?.value||'';
   const grupate={};
   istoricData.forEach(r=>{
-    if (filterId&&r.angajatId!==filterId) return;
-    const key=r.angajatId||r.angajatNume;
-    if (!grupate[key]) grupate[key]={nume:r.angajatNume,items:[]};
+    if (filterNume&&r.angajatNume!==filterNume) return;
+    const key=r.angajatNume||r.angajatId||'—';
+    if (!grupate[key]) grupate[key]={nume:r.angajatNume||'—',items:[]};
     grupate[key].items.push(r);
   });
   const sortati=Object.values(grupate).sort((a,b)=>a.nume.localeCompare(b.nume));
@@ -1551,12 +1552,12 @@ window.renderRaport = () => {
 };
 
 window.exportCSVRaport = () => {
-  const filterId=document.getElementById('raport-filter-angajat')?.value||'';
+  const filterNume=document.getElementById('raport-filter-angajat')?.value||'';
   const rows=[['Angajat','Articol','Marime','Cantitate']];
   const grupate={};
   istoricData.forEach(r=>{
-    if (filterId&&r.angajatId!==filterId) return;
-    const k=`${r.angajatId}||${r.hainaDenumire}||${r.marime}`;
+    if (filterNume&&r.angajatNume!==filterNume) return;
+    const k=`${r.angajatNume}||${r.hainaDenumire}||${r.marime}`;
     if (!grupate[k]) grupate[k]={nume:r.angajatNume,haina:r.hainaDenumire,marime:r.marime,cantitate:0};
     grupate[k].cantitate+=(r.cantitate||1);
   });
@@ -2066,7 +2067,7 @@ function downloadCSV(rows,filename){
 // Înregistrează funcțiile reale pentru proxy-urile din scriptul non-module
 ['toggleAdminLogin','doAdminLogin','doLogout','doOperatorLogin','openModal','closeModal','showSection',
  'clearAngajatSearch','showAngajatiDropdown','filterAngajatiDropdown','selectAngajat',
- 'distribuieHaine','adaugaAngajat','stergeAngajat','editeazaAngajat','salveazaAngajat',
+ 'distribuieHaine',
  'adaugaStoc','adaugaHaina','stergeHaina','sincronizeazaEiselfing','corecteazaStoc','updateStocModalMarime',
  'updateCorectareMarime','updateCorectareStocCurent','updateHainaMarimiInput','updateSizeOptions',
  'showStocScazut','filterIstoric','renderAdaugari','renderAngajati','renderRaport',
