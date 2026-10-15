@@ -563,6 +563,34 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
 
 <!-- Angajat modals removed — management centralized in Angajați MTC app -->
 
+<!-- Edit Haina -->
+<div class="modal-overlay" id="modal-edit-haina">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">EDITEAZĂ ARTICOL</div><button class="modal-close" onclick="closeModal('modal-edit-haina')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-haina-id">
+      <div class="form-field">
+        <label class="form-label">Denumire articol</label>
+        <input type="text" class="form-input" id="edit-haina-name">
+      </div>
+      <div class="form-field" id="edit-haina-marimi-curente-row" style="display:none;">
+        <label class="form-label">Mărimi curente</label>
+        <div id="edit-haina-marimi-curente" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;"></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">✕ apare doar la mărimi cu stoc = 0.</div>
+      </div>
+      <div class="form-field" id="edit-haina-adauga-row" style="display:none;">
+        <label class="form-label">Adaugă mărimi noi</label>
+        <input type="text" class="form-input" id="edit-haina-marimi-noi" placeholder="ex: XXL, 56, 58 — separate prin virgulă">
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">Noile mărimi vor fi adăugate cu stoc 0.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-edit-haina')">Anulează</button>
+      <button class="btn-action" onclick="salveazaEditHaina()">SALVEAZĂ</button>
+    </div>
+  </div>
+</div>
+
 <!-- Stoc Scazut Modal -->
 <div class="modal-overlay" id="modal-stoc-scazut">
   <div class="modal" style="max-width:560px;">
@@ -600,14 +628,15 @@ function _makeProxy(name) {
  'exportCSV','exportCSVAdaugari','exportCSVRaport',
  'faBBackupManual','incarcaListaBackupuri','restaureazaStocDinFirebase','restaureazaDinFisier',
  'forceLogoutOperator','seedData','stergeDistribuire','stergeAdaugare',
- 'loadComenzi','setComenziFilter','marcheazaOnorata','stergeComanada','trimitEmailRaspuns'
+ 'loadComenzi','setComenziFilter','marcheazaOnorata','stergeComanada','trimitEmailRaspuns',
+ 'openEditHaina','salveazaEditHaina','stergeMarimeHaina'
 ].forEach(_makeProxy);
 </script>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, increment, serverTimestamp, writeBatch, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, increment, serverTimestamp, writeBatch, where, deleteField } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // =============================================
 // FIREBASE CONFIG
@@ -662,6 +691,7 @@ let currentUser = null, currentRole = null, currentOperatorName = '';
 let stocData = {}, angajatiData = [], istoricData = [], adaugariData = [];
 let unsubStoc = null, unsubAngajati = null, unsubIstoric = null, unsubAdaugari = null, unsubComenzi = null;
 let appStarted = false;
+let _editHainaId = null;
 
 // =============================================
 // CONSTANTE
@@ -908,6 +938,7 @@ function renderStoc() {
   grid.innerHTML = haine.map(h => {
     const fara = estefaraMarimi(h);
     const numeEsc = h.denumire.replace(/'/g,"\\'");
+    const editBtn = currentRole === 'admin' ? `<button style="background:var(--surface2);border:1px solid var(--border);color:var(--accent);padding:5px 10px;border-radius:3px;cursor:pointer;font-size:13px;" onclick="openEditHaina('${h.id}')">✏</button>` : '';
     const delBtn = currentRole === 'admin' ? `<button class="btn-danger" onclick="stergeHaina('${h.id}','${numeEsc}')">✕</button>` : '';
     let sizesHtml, total;
     if (fara) {
@@ -930,7 +961,7 @@ function renderStoc() {
         <div class="stoc-card-name">${h.denumire}</div>
         <div style="display:flex;align-items:center;gap:10px;">
           ${!fara?`<div style="font-family:var(--font-mono);font-size:13px;color:var(--muted);">TOTAL: ${total}</div>`:''}
-          ${delBtn}
+          ${editBtn}${delBtn}
         </div>
       </div>${sizesHtml}</div>`;
   }).join('');
@@ -1461,6 +1492,96 @@ window.stergeHaina = async (id,denumire) => {
     for (const d of snap.docs) await deleteDoc(d.ref);
   } catch(e) { console.warn('Sync delete Eiselfing eșuat:',e); }
   showToast(`"${denumire}" șters din Ruhstorf și Eiselfing.`);
+};
+
+// =============================================
+// EDITARE ARTICOL
+// =============================================
+window.openEditHaina = (id) => {
+  const h = stocData[id];
+  if (!h) return;
+  _editHainaId = id;
+  document.getElementById('edit-haina-name').value = h.denumire;
+  const fara = estefaraMarimi(h);
+  const marimiRow = document.getElementById('edit-haina-marimi-curente-row');
+  const adaugaRow = document.getElementById('edit-haina-adauga-row');
+  if (!fara) {
+    marimiRow.style.display = '';
+    adaugaRow.style.display = '';
+    const ml = getMarimiArticol(h);
+    document.getElementById('edit-haina-marimi-curente').innerHTML = ml.map(m => {
+      const qty = (h.marimi && h.marimi[m]) || 0;
+      const delX = qty === 0
+        ? `<button onclick="stergeMarimeHaina('${id}','${m}')" style="background:none;border:none;color:var(--red);cursor:pointer;padding:0 0 0 4px;font-size:14px;line-height:1;" title="Șterge mărimea">✕</button>`
+        : '';
+      return `<span style="display:inline-flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:5px 10px;font-family:var(--font-mono);font-size:13px;">
+        ${m}<span style="color:var(--muted);margin-left:5px;font-size:11px;">(${qty})</span>${delX}
+      </span>`;
+    }).join('');
+    document.getElementById('edit-haina-marimi-noi').value = '';
+  } else {
+    marimiRow.style.display = 'none';
+    adaugaRow.style.display = 'none';
+  }
+  openModal('modal-edit-haina');
+};
+
+window.stergeMarimeHaina = async (hainaId, marime) => {
+  const h = stocData[hainaId];
+  if (!h) return;
+  const qty = (h.marimi && h.marimi[marime]) || 0;
+  if (qty > 0) { showToast(`Nu poți șterge "${marime}" — stoc existent: ${qty} buc.`, true); return; }
+  if (!confirm(`Ștergi mărimea "${marime}" din articolul "${h.denumire}"?`)) return;
+  const updates = { [`marimi.${marime}`]: deleteField() };
+  if (h.marimiOrdine) updates.marimiOrdine = h.marimiOrdine.filter(m => m !== marime);
+  await updateDoc(doc(db,'stoc',hainaId), updates);
+  try {
+    const q = query(collection(db,'stoc_eiselfing'), where('denumire','==',h.denumire));
+    const snap = await getDocs(q);
+    for (const d of snap.docs) await updateDoc(d.ref, updates);
+  } catch(e) { console.warn('Sync Eiselfing:', e); }
+  showToast(`Mărimea "${marime}" ștearsă.`);
+  // Reîncarcă modalul cu starea actualizată
+  setTimeout(() => openEditHaina(hainaId), 400);
+};
+
+window.salveazaEditHaina = async () => {
+  const h = stocData[_editHainaId];
+  if (!h) return;
+  const newName = document.getElementById('edit-haina-name').value.trim().toUpperCase();
+  if (!newName) { showToast('Introduceți un nume!', true); return; }
+  const updates = {};
+  if (newName !== h.denumire) {
+    if (Object.values(stocData).find(x => x.id !== _editHainaId && x.denumire === newName)) {
+      showToast(`"${newName}" există deja!`, true); return;
+    }
+    updates.denumire = newName;
+  }
+  const fara = estefaraMarimi(h);
+  if (!fara) {
+    const noiFld = document.getElementById('edit-haina-marimi-noi').value;
+    const noi = noiFld.split(',').map(m => m.trim().toUpperCase()).filter(m => m);
+    if (noi.length) {
+      const existente = getMarimiArticol(h);
+      const deAdaugat = noi.filter(m => !existente.includes(m));
+      if (deAdaugat.length) {
+        deAdaugat.forEach(m => { updates[`marimi.${m}`] = 0; });
+        if (h.tipMarimi === 'numeric' || h.marimiOrdine) {
+          updates.marimiOrdine = [...(h.marimiOrdine || existente), ...deAdaugat];
+        }
+      }
+    }
+  }
+  if (!Object.keys(updates).length) { closeModal('modal-edit-haina'); return; }
+  await updateDoc(doc(db,'stoc',_editHainaId), updates);
+  try {
+    const searchName = h.denumire; // caută după numele vechi
+    const q = query(collection(db,'stoc_eiselfing'), where('denumire','==',searchName));
+    const snap = await getDocs(q);
+    for (const d of snap.docs) await updateDoc(d.ref, updates);
+  } catch(e) { console.warn('Sync Eiselfing:', e); }
+  closeModal('modal-edit-haina');
+  showToast(`"${newName || h.denumire}" actualizat (Ruhstorf + Eiselfing).`);
 };
 
 // =============================================
@@ -2074,7 +2195,8 @@ function downloadCSV(rows,filename){
  'exportCSV','exportCSVAdaugari','exportCSVRaport',
  'faBBackupManual','incarcaListaBackupuri','restaureazaStocDinFirebase','restaureazaDinFisier',
  'forceLogoutOperator','seedData','stergeDistribuire','stergeAdaugare','showToast',
- 'loadComenzi','setComenziFilter','marcheazaOnorata','stergeComanada','trimitEmailRaspuns'
+ 'loadComenzi','setComenziFilter','marcheazaOnorata','stergeComanada','trimitEmailRaspuns',
+ 'openEditHaina','salveazaEditHaina','stergeMarimeHaina'
 ].forEach(name => { if (window[name]) window['_real_' + name] = window[name]; });
 
 </script>
