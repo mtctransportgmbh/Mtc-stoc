@@ -710,7 +710,8 @@ const OPERATORI = {
 function estefaraMarimi(h) { return !h || FARA_MARIMI.includes(h.denumire) || h.tipMarimi === 'fara'; }
 function getMarimiArticol(h) {
   if (estefaraMarimi(h)) return [];
-  if (h.tipMarimi === 'numeric' && h.marimiOrdine) return h.marimiOrdine;
+  // Dacă există marimiOrdine (inclusiv articole standard cărora li s-au adăugat mărimi extra), folosește-l
+  if (h.marimiOrdine && h.marimiOrdine.length) return h.marimiOrdine;
   if (h.marimi) {
     const keys = Object.keys(h.marimi);
     const allNum = keys.every(k => !isNaN(parseFloat(k)));
