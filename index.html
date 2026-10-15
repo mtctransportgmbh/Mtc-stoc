@@ -1566,9 +1566,9 @@ window.salveazaEditHaina = async () => {
       const deAdaugat = noi.filter(m => !existente.includes(m));
       if (deAdaugat.length) {
         deAdaugat.forEach(m => { updates[`marimi.${m}`] = 0; });
-        if (h.tipMarimi === 'numeric' || h.marimiOrdine) {
-          updates.marimiOrdine = [...(h.marimiOrdine || existente), ...deAdaugat];
-        }
+        // Setează ÎNTOTDEAUNA marimiOrdine când se adaugă mărimi noi
+        // (altfel getMarimiArticol nu le afișează pe cele adăugate la articole standard)
+        updates.marimiOrdine = [...(h.marimiOrdine || existente), ...deAdaugat];
       }
     }
   }
