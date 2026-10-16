@@ -514,7 +514,7 @@ function estefaraMarimi(h) {
 }
 function getMarimiArticol(h) {
   if (estefaraMarimi(h)) return [];
-  if (h.tipMarimi === 'numeric' && h.marimiOrdine) return h.marimiOrdine;
+  if (h.marimiOrdine && h.marimiOrdine.length) return h.marimiOrdine;
   if (h.marimi) {
     const keys = Object.keys(h.marimi);
     const allNum = keys.every(k => !isNaN(parseFloat(k)));
