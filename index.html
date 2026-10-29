@@ -372,6 +372,7 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
         <div class="section-title">RAPORT PERSOANE</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
           <select class="form-select" style="width:auto;" id="raport-filter-angajat" onchange="renderRaport()"><option value="">Toți angajații</option></select>
+          <button class="btn-secondary" onclick="openAliasModal()">🔗 Unește nume</button>
           <button class="btn-secondary" onclick="exportCSVRaport()">⬇ Export CSV</button>
         </div>
       </div>
@@ -635,7 +636,8 @@ function _makeProxy(name) {
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
 import { getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, increment, serverTimestamp, writeBatch, where, deleteField } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // =============================================
@@ -699,7 +701,6 @@ let _editHainaId = null;
 const MARIMI = ['XS','S','M','L','XL'];
 const FARA_MARIMI = ['SAPCA','CACIULA'];
 const PRAG_SCAZUT = 7;
-const ANGAJATI_RUHSTORF_URL = 'https://us-central1-angajati-f1b01.cloudfunctions.net/angajatiRuhstorf';
 const OPERATORI = {
   operator1: { displayName: 'Cristi' },
   operator2: { displayName: 'Mihaela' },
@@ -722,14 +723,12 @@ function getMarimiArticol(h) {
 }
 
 // =============================================
-// AUTH — PIN DINAMIC OPERATORI
+// AUTH — PIN verificat PE SERVER (funcțiile din proiectul stoc-haine)
 // =============================================
-const OP_ADMIN_RESET_PIN = '000000'; // Paul schimbă această valoare dacă vrea alt PIN admin
-const opPinKey = (uid) => `ruhstorf_pin_${uid}`;
-const opHasPinSet = (uid) => !!localStorage.getItem(opPinKey(uid));
-const opGetPin = (uid) => localStorage.getItem(opPinKey(uid));
-const opSavePin = (uid, pin) => localStorage.setItem(opPinKey(uid), pin);
-const opClearPin = (uid) => localStorage.removeItem(opPinKey(uid));
+const ADMIN_EMAIL = 'paulandreimacarie@yahoo.com';
+const fnApp = getFunctions(app, 'europe-west1');
+const callFn = (name, data) => httpsCallable(fnApp, name)(data).then(r => r.data);
+const _errMsg = (e, dflt) => (e && e.code && /resource-exhausted|permission-denied|invalid-argument/.test(e.code) && e.message) ? e.message : dflt;
 
 let _pendingOpId = null;
 
@@ -739,86 +738,69 @@ function _setOpAuthError(msg, color) {
   el.textContent = msg;
 }
 
-function _doOperatorLoginSuccess(opId) {
-  const op = OPERATORI[opId];
-  localStorage.setItem('hermes_operator', JSON.stringify({ id: opId, ...op, role: 'operator' }));
-  currentUser = { uid: opId, email: opId, isOperator: true };
-  currentRole = 'operator';
-  currentOperatorName = op.displayName;
-  startApp();
-}
-
-window.selectOperator = (opId) => {
+window.selectOperator = async (opId) => {
   _pendingOpId = opId;
   _setOpAuthError('');
   document.querySelectorAll('.btn-operator').forEach(b => b.style.opacity = '0.45');
   const btn = document.getElementById('btn-op-' + opId);
   if (btn) btn.style.opacity = '1';
-
-  if (opHasPinSet(opId)) {
-    document.getElementById('op-pin-row').style.display = 'block';
-    document.getElementById('op-pin-setup-row').style.display = 'none';
-    document.getElementById('op-pin-input').value = '';
-    setTimeout(() => document.getElementById('op-pin-input').focus(), 50);
-  } else {
-    document.getElementById('op-pin-row').style.display = 'none';
-    document.getElementById('op-pin-setup-row').style.display = 'block';
-    document.getElementById('op-pin-new').value = '';
-    document.getElementById('op-pin-confirm').value = '';
-    setTimeout(() => document.getElementById('op-pin-new').focus(), 50);
-  }
+  document.getElementById('op-pin-row').style.display = 'none';
+  document.getElementById('op-pin-setup-row').style.display = 'none';
+  try {
+    const r = await callFn('stocPinState', { app: 'ruhstorf', user: opId });
+    if (r.state === 'set') {
+      document.getElementById('op-pin-row').style.display = 'block';
+      document.getElementById('op-pin-input').value = '';
+      setTimeout(() => document.getElementById('op-pin-input').focus(), 50);
+    } else if (r.state === 'setup') {
+      document.getElementById('op-pin-setup-row').style.display = 'block';
+      document.getElementById('op-pin-new').value = '';
+      document.getElementById('op-pin-confirm').value = '';
+      setTimeout(() => document.getElementById('op-pin-new').focus(), 50);
+    } else {
+      _setOpAuthError('Contul nu este activat încă. Cere administratorului să apese „Reset PIN” pentru tine.');
+    }
+  } catch (e) { _setOpAuthError('Eroare de conectare. Încearcă din nou.'); }
 };
 
-window.confirmOperatorPin = () => {
+window.confirmOperatorPin = async () => {
   const opId = _pendingOpId;
   const pin = (document.getElementById('op-pin-input').value || '').trim();
   if (!opId) { _setOpAuthError('Selectează mai întâi utilizatorul.'); return; }
   if (!pin) { _setOpAuthError('Introdu PIN-ul.'); return; }
-  if (pin !== opGetPin(opId)) {
-    _setOpAuthError('PIN incorect. Încearcă din nou.');
+  try {
+    const r = await callFn('stocLogin', { app: 'ruhstorf', user: opId, pin });
+    await signInWithCustomToken(auth, r.token);
+  } catch (e) {
+    _setOpAuthError(_errMsg(e, 'PIN incorect. Încearcă din nou.'));
     document.getElementById('op-pin-input').value = '';
     document.getElementById('op-pin-input').focus();
-    return;
   }
-  _doOperatorLoginSuccess(opId);
 };
 
-window.saveOperatorPin = () => {
+window.saveOperatorPin = async () => {
   const opId = _pendingOpId;
   const pin = (document.getElementById('op-pin-new').value || '').trim();
   const pinC = (document.getElementById('op-pin-confirm').value || '').trim();
   if (!opId) { _setOpAuthError('Selectează mai întâi utilizatorul.'); return; }
   if (!/^\d{6}$/.test(pin)) { _setOpAuthError('PIN-ul trebuie să fie exact 6 cifre.'); return; }
   if (pin !== pinC) { _setOpAuthError('PIN-urile nu coincid. Încearcă din nou.'); return; }
-  opSavePin(opId, pin);
-  _doOperatorLoginSuccess(opId);
-};
-
-window.adminResetOpPin = (opId, name) => {
-  if (!confirm(`Resetezi PIN-ul pentru ${name}?\nLa următoarea conectare va trebui să-și aleagă un PIN nou.`)) return;
-  opClearPin(opId);
-  const msg = document.getElementById('admin-pin-reset-msg');
-  if (msg) {
-    msg.style.color = 'var(--green)';
-    msg.textContent = `✅ PIN resetat pentru ${name} (Ruhstorf).`;
-    setTimeout(() => { msg.textContent = ''; }, 4000);
-  }
-};
-
-window.adminResetEiPin = async (userId, name) => {
-  if (!confirm(`Resetezi PIN-ul pentru ${name} (Eiselfing)?\nLa următoarea conectare va trebui să-și aleagă un PIN nou.`)) return;
   try {
-    await deleteDoc(doc(db, 'eiselfing_pins', userId));
-    const msg = document.getElementById('admin-pin-reset-msg');
-    if (msg) {
-      msg.style.color = 'var(--green)';
-      msg.textContent = `✅ PIN resetat pentru ${name} (Eiselfing).`;
-      setTimeout(() => { msg.textContent = ''; }, 4000);
-    }
-  } catch(e) {
-    showToast('Eroare la reset PIN Eiselfing: ' + e.message, true);
-  }
+    const r = await callFn('stocSetPin', { app: 'ruhstorf', user: opId, newPin: pin });
+    await signInWithCustomToken(auth, r.token);
+  } catch (e) { _setOpAuthError(_errMsg(e, 'Nu am putut salva PIN-ul. Încearcă din nou.')); }
 };
+
+async function _adminReset(appName, userId, name) {
+  if (!confirm(`Resetezi PIN-ul pentru ${name} (${appName === 'ruhstorf' ? 'Ruhstorf' : 'Eiselfing'})?\nLa următoarea conectare va trebui să-și aleagă un PIN nou.`)) return;
+  const msg = document.getElementById('admin-pin-reset-msg');
+  try {
+    await callFn('stocAdminResetPin', { app: appName, user: userId });
+    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = `✅ PIN resetat pentru ${name}.`; setTimeout(() => { msg.textContent = ''; }, 4000); }
+  } catch (e) { showToast('Eroare la reset PIN: ' + (e.message || e), true); }
+}
+window.adminResetOpPin = (opId, name) => _adminReset('ruhstorf', opId, name);
+window.adminResetEiPin = (userId, name) => _adminReset('eiselfing', userId, name);
 
 window.toggleAdminLogin = () => {
   const op = document.getElementById('operator-login');
@@ -841,40 +823,39 @@ document.getElementById('login-pass').addEventListener('keydown', e => { if (e.k
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    currentUser = user;
-    currentRole = 'admin';
-    currentOperatorName = 'Paul';
-    startApp();
-  } else {
-    const saved = localStorage.getItem('hermes_operator');
-    if (saved) {
-      try {
-        const op = JSON.parse(saved);
-        // Verifică că operatorul are PIN setat (protecție la sesiuni salvate vechi)
-        if (!opHasPinSet(op.id)) { localStorage.removeItem('hermes_operator'); throw new Error('no pin'); }
-        currentUser = { uid: op.id, email: op.id, isOperator: true };
-        currentRole = 'operator';
-        currentOperatorName = op.displayName;
-        startApp();
-        return;
-      } catch { localStorage.removeItem('hermes_operator'); }
+    let claims = {};
+    try { claims = (await user.getIdTokenResult()).claims || {}; } catch (e) {}
+    if (claims.role === 'operator' && claims.app === 'ruhstorf') {
+      currentUser = { uid: claims.opId, email: claims.opId, isOperator: true };
+      currentRole = 'operator';
+      currentOperatorName = claims.name || claims.opId;
+      startApp();
+      return;
     }
-    currentUser = null; currentRole = null; appStarted = false;
-    document.getElementById('auth-screen').style.display = 'flex';
-    document.getElementById('app').style.display = 'none';
-    if (unsubStoc) unsubStoc();
-    if (unsubAngajati) unsubAngajati();
-    if (unsubIstoric) unsubIstoric();
-    if (unsubAdaugari) unsubAdaugari();
-    if (unsubComenzi) { unsubComenzi(); unsubComenzi = null; }
+    if (user.email && user.email === ADMIN_EMAIL) {
+      currentUser = user;
+      currentRole = 'admin';
+      currentOperatorName = 'Paul';
+      startApp();
+      return;
+    }
+    await signOut(auth); // cont necunoscut / din altă aplicație
+    return;
   }
+  currentUser = null; currentRole = null; appStarted = false;
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  if (unsubStoc) unsubStoc();
+  if (unsubAngajati) unsubAngajati();
+  if (unsubIstoric) unsubIstoric();
+  if (unsubAdaugari) unsubAdaugari();
+  if (unsubComenzi) { unsubComenzi(); unsubComenzi = null; }
 });
 
 window.doLogout = async () => {
   appStarted = false;
-  localStorage.removeItem('hermes_operator');
-  if (currentUser?.isOperator) { window.location.reload(); }
-  else { await signOut(auth); window.location.reload(); }
+  try { await signOut(auth); } catch (e) {}
+  window.location.reload();
 };
 
 // =============================================
@@ -906,8 +887,7 @@ function initApp() {
   if (currentRole === 'operator' && currentUser?.uid) {
     onSnapshot(doc(db, 'force_logout', currentUser.uid), (snap) => {
       if (snap.exists() && snap.data().logout === true) {
-        deleteDoc(doc(db, 'force_logout', currentUser.uid)).then(() => {
-          localStorage.removeItem('hermes_operator');
+        deleteDoc(doc(db, 'force_logout', currentUser.uid)).catch(() => {}).then(() => signOut(auth)).then(() => {
           window.location.reload();
         });
       }
@@ -1028,35 +1008,60 @@ function updateStocSelects() {
 // =============================================
 // ANGAJATI
 // =============================================
+// Sincronizare ca la Concedii/Reclamații: aplicația Angajați scrie o copie minimă în
+// angajati_sync/list din acest proiect; aici doar ascultăm documentul (live).
+// Dacă documentul nu există încă, se folosește Cloud Function ca rezervă.
+const LOCATIE_APP = 'Ruhstorf';
+function _angDinSync(items) {
+  return (items || [])
+    .filter(it => (it.status || 'Activ') === 'Activ')
+    .filter(it => Array.isArray(it.locatii) && it.locatii.length
+      ? it.locatii.includes(LOCATIE_APP) : it.depot === LOCATIE_APP)
+    .map(it => ({
+      id: it.id,
+      nume: it.nume || it.numeComplet || '—',
+      numeComplet: it.nume || it.numeComplet || '—',
+      rol: Array.isArray(it.roluri) ? it.roluri.join(', ') : (it.rol || '')
+    }))
+    .sort((a, b) => a.nume.localeCompare(b.nume));
+}
+
 function loadAngajati() {
   if (unsubAngajati) { unsubAngajati(); unsubAngajati = null; }
 
+  const refresh = () => { renderAngajati(); populateAngajatiSelect(); populateRaportFilter(); renderStats(); };
+  let _fallbackStarted = false;
+  function startFallback() {
+    if (_fallbackStarted) return;
+    _fallbackStarted = true;
+    fetchAngajati();
+    const _iv = setInterval(fetchAngajati, 60000);
+    const prev = unsubAngajati;
+    unsubAngajati = () => { clearInterval(_iv); if (prev) prev(); };
+  }
+  const unsubSnap = onSnapshot(doc(db, 'angajati_sync', 'list'), snap => {
+    if (!snap.exists()) { startFallback(); return; }
+    angajatiData = _angDinSync(snap.data().items);
+    refresh();
+  }, err => {
+    console.warn('angajati_sync indisponibil, folosesc Cloud Function:', err);
+    startFallback();
+  });
+  unsubAngajati = unsubSnap;
+
   async function fetchAngajati() {
     try {
-      const resp = await fetch(ANGAJATI_RUHSTORF_URL);
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      const data = await resp.json();
-      // Normalizare: numeComplet → nume (pentru compatibilitate cu restul codului)
-      angajatiData = (data.angajati || []).map(a => ({
-        ...a,
-        nume: a.numeComplet || a.nume || '—'
-      }));
-      renderAngajati();
-      populateAngajatiSelect();
-      populateRaportFilter();
-      renderStats();
+      // endpointul public a fost dezactivat (securitate); lista vine doar din angajati_sync/list
+      throw new Error('lista de angajați nu a fost încă sincronizată din aplicația Angajați');
     } catch(err) {
       console.error('Eroare angajați Ruhstorf:', err);
       const grid = document.getElementById('angajati-grid');
       if (grid && !angajatiData.length) {
-        grid.innerHTML = '<div class="loading" style="color:var(--red);">⚠ Nu s-au putut încărca angajații — verifică Cloud Function angajatiRuhstorf</div>';
+        grid.innerHTML = '<div class="loading" style="color:var(--red);">⚠ Nu s-au putut încărca angajații — așteaptă sincronizarea din aplicația Angajați</div>';
       }
     }
   }
 
-  fetchAngajati();
-  const _iv = setInterval(fetchAngajati, 60000);
-  unsubAngajati = () => clearInterval(_iv);
 }
 
 window.renderAngajati = function() {
@@ -1621,13 +1626,62 @@ window.sincronizeazaEiselfing = async () => {
 // =============================================
 // RAPORT PERSOANE
 // =============================================
+
+// ===== Unire manuală de nume (aceeași persoană scrisă diferit) — nu modifică istoricul, doar afișarea =====
+let aliasMap = {}, _aliasStarted = false;
+const canonName = n => aliasMap[n] || n;
+function startAliases(){
+  if (_aliasStarted) return; _aliasStarted = true;
+  onSnapshot(doc(db,'aliasuri','ruhstorf'), snap => {
+    aliasMap = snap.exists() ? (snap.data().map || {}) : {};
+    if (typeof renderRaport==='function') { populateRaportFilter(); renderRaport(); }
+    if (document.getElementById('alias-modal')) window.openAliasModal();
+  }, err => console.warn('aliasuri:', err));
+}
+function _allNames(){
+  const a = new Set(); istoricData.forEach(r => r.angajatNume && a.add(r.angajatNume));
+  angajatiData.forEach(x => x.nume && a.add(x.nume));
+  return [...a].sort((x,y)=>x.localeCompare(y));
+}
+window.openAliasModal = () => {
+  if (!(currentRole==='admin')) return;
+  const names = _allNames();
+  const opt = n => '<option value="'+String(n).replace(/"/g,'&quot;')+'">'+n+'</option>';
+  const cur = Object.entries(aliasMap).map(([a,b]) => '<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;"><span>'+a+' → <b>'+b+'</b></span><button class="btn-secondary" onclick="removeAlias(\''+encodeURIComponent(a)+'\')">Desparte</button></div>').join('');
+  let m = document.getElementById('alias-modal');
+  if (!m){ m = document.createElement('div'); m.id='alias-modal'; m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;'; document.body.appendChild(m); }
+  m.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;max-width:560px;width:100%;max-height:90vh;overflow:auto;padding:22px;">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><div style="font-size:18px;font-weight:600;">🔗 Unește nume</div><span style="cursor:pointer;font-size:22px;" onclick="document.getElementById(\'alias-modal\').remove()">&times;</span></div>'+
+    '<div style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Alege numele scris greșit/dublu și numele sub care vrei să apară. Istoricul NU se modifică — doar raportul le adună la un loc și poți desface oricând.</div>'+
+    '<div style="display:grid;gap:8px;"><select class="form-select" id="alias-from"><option value="">— nume de unit —</option>'+names.map(opt).join('')+'</select>'+
+    '<select class="form-select" id="alias-to"><option value="">— se unește în —</option>'+names.map(opt).join('')+'</select>'+
+    '<button class="btn-primary" onclick="addAlias()">Unește</button></div>'+
+    (cur ? '<div style="margin-top:16px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Uniri active</div>'+cur : '')+'</div>';
+};
+window.addAlias = async () => {
+  const a = document.getElementById('alias-from').value, b = document.getElementById('alias-to').value;
+  if (!a || !b || a === b){ showToast('Alege două nume diferite', true); return; }
+  const target = canonName(b);
+  if (target === a){ showToast('Ar crea un cerc', true); return; }
+  const map = { ...aliasMap };
+  Object.keys(map).forEach(k => { if (map[k] === a) map[k] = target; });   // cine arăta spre A, arată acum spre țintă
+  map[a] = target;
+  try { await setDoc(doc(db,'aliasuri','ruhstorf'), { map, updatedAt: serverTimestamp() }); showToast('Unit: '+a+' → '+target); }
+  catch(e){ console.error(e); showToast('Eroare la salvare', true); }
+};
+window.removeAlias = async (enc) => {
+  const a = decodeURIComponent(enc); const map = { ...aliasMap }; delete map[a];
+  try { await setDoc(doc(db,'aliasuri','ruhstorf'), { map, updatedAt: serverTimestamp() }); showToast('Desfăcut'); }
+  catch(e){ console.error(e); showToast('Eroare', true); }
+};
 function populateRaportFilter() {
   const sel=document.getElementById('raport-filter-angajat');
   if (!sel) return;
   const cur=sel.value;
   // Combină: angajații activi + oricine apare în istoric (date vechi)
-  const dinIstoric=[...new Set(istoricData.map(r=>r.angajatNume).filter(Boolean))];
-  const dinAngajati=angajatiData.map(a=>a.nume).filter(Boolean);
+  startAliases();
+  const dinIstoric=[...new Set(istoricData.map(r=>canonName(r.angajatNume)).filter(Boolean))];
+  const dinAngajati=angajatiData.map(a=>canonName(a.nume)).filter(Boolean);
   const names=[...new Set([...dinIstoric,...dinAngajati])].sort((a,b)=>a.localeCompare(b));
   sel.innerHTML='<option value="">Toți angajații</option>'+names.map(n=>`<option value="${n}"${n===cur?' selected':''}>${n}</option>`).join('');
 }
@@ -1638,9 +1692,10 @@ window.renderRaport = () => {
   const filterNume=document.getElementById('raport-filter-angajat')?.value||'';
   const grupate={};
   istoricData.forEach(r=>{
-    if (filterNume&&r.angajatNume!==filterNume) return;
-    const key=r.angajatNume||r.angajatId||'—';
-    if (!grupate[key]) grupate[key]={nume:r.angajatNume||'—',items:[]};
+    const cn=canonName(r.angajatNume);
+    if (filterNume&&cn!==filterNume) return;
+    const key=cn||r.angajatId||'—';
+    if (!grupate[key]) grupate[key]={nume:cn||'—',items:[]};
     grupate[key].items.push(r);
   });
   const sortati=Object.values(grupate).sort((a,b)=>a.nume.localeCompare(b.nume));
@@ -1678,9 +1733,10 @@ window.exportCSVRaport = () => {
   const rows=[['Angajat','Articol','Marime','Cantitate']];
   const grupate={};
   istoricData.forEach(r=>{
-    if (filterNume&&r.angajatNume!==filterNume) return;
-    const k=`${r.angajatNume}||${r.hainaDenumire}||${r.marime}`;
-    if (!grupate[k]) grupate[k]={nume:r.angajatNume,haina:r.hainaDenumire,marime:r.marime,cantitate:0};
+    const cn=canonName(r.angajatNume);
+    if (filterNume&&cn!==filterNume) return;
+    const k=`${cn}||${r.hainaDenumire}||${r.marime}`;
+    if (!grupate[k]) grupate[k]={nume:cn,haina:r.hainaDenumire,marime:r.marime,cantitate:0};
     grupate[k].cantitate+=(r.cantitate||1);
   });
   Object.values(grupate).sort((a,b)=>a.nume.localeCompare(b.nume)).forEach(r=>rows.push([r.nume,r.haina,r.marime,r.cantitate]));

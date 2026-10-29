@@ -359,6 +359,7 @@ tr:hover td{background:var(--surface2);}
           <select class="form-select" style="width:auto;" id="raport-ei-filter-angajat" onchange="renderRaportEi()">
             <option value="">Toți angajații</option>
           </select>
+          <button class="btn-secondary" onclick="openAliasModal()">🔗 Unește nume</button>
           <button class="btn-secondary" onclick="exportCSVRaportEi()">⬇ Export CSV</button>
         </div>
       </div>
@@ -456,6 +457,8 @@ tr:hover td{background:var(--surface2);}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-functions.js";
 import { getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, limit, increment, serverTimestamp, writeBatch, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -469,13 +472,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig, 'eiselfing');
 const db = getFirestore(app);
-
-const ANGAJATI_FN_URL = 'https://us-central1-angajati-f1b01.cloudfunctions.net/angajatiEiselfing';
-
-// ── PIN admin pentru reset ────────────────────────────────────
-// Schimbă valoarea de mai jos cu PIN-ul tău de admin.
-const ADMIN_RESET_PIN = '000000';
-// ─────────────────────────────────────────────────────────────
+const auth = getAuth(app);
+const fnApp = getFunctions(app, 'europe-west1');
+const callFn = (name, data) => httpsCallable(fnApp, name)(data).then(r => r.data);
 
 
 // Conexiune
@@ -524,23 +523,16 @@ function getMarimiArticol(h) {
   return MARIMI;
 }
 
-// ============================================
-// AUTH — PIN stocat în Firestore (resetabil de admin din Ruhstorf)
+// AUTH — PIN verificat PE SERVER (funcțiile din proiectul stoc-haine)
 // ============================================
 const PIN_NAMES = { madalina: 'Mădălina', alex: 'Alex' };
-const COL_EI_PINS = 'eiselfing_pins';
 let _pendingUserId = null;
+const _errMsg = (e, dflt) => (e && e.code && /resource-exhausted|permission-denied|invalid-argument/.test(e.code) && e.message) ? e.message : dflt;
 
 function _setAuthError(msg, color) {
   const el = document.getElementById('auth-error');
   el.style.color = color || '';
   el.textContent = msg;
-}
-function _doLoginSuccess(userId) {
-  const name = PIN_NAMES[userId];
-  localStorage.setItem('eiselfing_user', JSON.stringify({ id: userId, name }));
-  currentUser = { id: userId, name };
-  startApp();
 }
 
 window.selectUser = async (userId) => {
@@ -549,20 +541,21 @@ window.selectUser = async (userId) => {
   document.querySelectorAll('.btn-operator').forEach(b => b.style.opacity = '0.45');
   const btn = document.getElementById('btn-user-' + userId);
   if (btn) btn.style.opacity = '1';
-  // Ascunde ambele rânduri cât verificăm Firestore
   document.getElementById('pin-row').style.display = 'none';
   document.getElementById('pin-setup-row').style.display = 'none';
   try {
-    const snap = await getDoc(doc(db, COL_EI_PINS, userId));
-    if (snap.exists()) {
+    const r = await callFn('stocPinState', { app: 'eiselfing', user: userId });
+    if (r.state === 'set') {
       document.getElementById('pin-row').style.display = 'block';
       document.getElementById('pin-input').value = '';
       setTimeout(() => document.getElementById('pin-input').focus(), 50);
-    } else {
+    } else if (r.state === 'setup') {
       document.getElementById('pin-setup-row').style.display = 'block';
       document.getElementById('pin-new').value = '';
       document.getElementById('pin-confirm').value = '';
       setTimeout(() => document.getElementById('pin-new').focus(), 50);
+    } else {
+      _setAuthError('Contul nu este activat încă. Cere administratorului să apese „Reset PIN” pentru tine.');
     }
   } catch(e) {
     _setAuthError('Eroare de conectare. Încearcă din nou.');
@@ -575,16 +568,12 @@ window.confirmPin = async () => {
   if (!userId) { _setAuthError('Selectează mai întâi utilizatorul.'); return; }
   if (!pin) { _setAuthError('Introdu PIN-ul.'); return; }
   try {
-    const snap = await getDoc(doc(db, COL_EI_PINS, userId));
-    if (!snap.exists() || snap.data().pin !== pin) {
-      _setAuthError('PIN incorect. Încearcă din nou.');
-      document.getElementById('pin-input').value = '';
-      document.getElementById('pin-input').focus();
-      return;
-    }
-    _doLoginSuccess(userId);
+    const r = await callFn('stocLogin', { app: 'eiselfing', user: userId, pin });
+    await signInWithCustomToken(auth, r.token);
   } catch(e) {
-    _setAuthError('Eroare de verificare. Încearcă din nou.');
+    _setAuthError(_errMsg(e, 'PIN incorect. Încearcă din nou.'));
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-input').focus();
   }
 };
 
@@ -596,28 +585,35 @@ window.saveNewPin = async () => {
   if (!/^\d{6}$/.test(pin)) { _setAuthError('PIN-ul trebuie să fie exact 6 cifre.'); return; }
   if (pin !== pinC) { _setAuthError('PIN-urile nu coincid. Încearcă din nou.'); return; }
   try {
-    await setDoc(doc(db, COL_EI_PINS, userId), { pin, setatLa: serverTimestamp() });
-    _doLoginSuccess(userId);
+    const r = await callFn('stocSetPin', { app: 'eiselfing', user: userId, newPin: pin });
+    await signInWithCustomToken(auth, r.token);
   } catch(e) {
-    _setAuthError('Eroare la salvare. Încearcă din nou.');
+    _setAuthError(_errMsg(e, 'Nu am putut salva PIN-ul. Încearcă din nou.'));
   }
 };
 
-window.doLogout = () => {
-  localStorage.removeItem('eiselfing_user');
+window.doLogout = async () => {
+  try { await signOut(auth); } catch (e) {}
   window.location.reload();
 };
 
-// Check saved login
-const savedUser = localStorage.getItem('eiselfing_user');
-if (savedUser) {
-  try {
-    currentUser = JSON.parse(savedUser);
-    startApp();
-  } catch { localStorage.removeItem('eiselfing_user'); }
-} else {
+// Sesiunea vine din Firebase Auth (token primit de la server după PIN corect)
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    let claims = {};
+    try { claims = (await user.getIdTokenResult()).claims || {}; } catch (e) {}
+    if (claims.role === 'operator' && claims.app === 'eiselfing') {
+      currentUser = { id: claims.opId, name: claims.name || PIN_NAMES[claims.opId] || claims.opId };
+      startApp();
+      return;
+    }
+    await signOut(auth); // cont din altă aplicație
+    return;
+  }
+  appStarted = false; currentUser = null;
   document.getElementById('auth-screen').style.display = 'flex';
-}
+  document.getElementById('app').style.display = 'none';
+});
 
 // ============================================
 // APP START
@@ -786,29 +782,58 @@ window.corecteazaStoc = async () => {
 // ANGAJAȚI — citit din Cloud Function angajati-mtc
 // Filtrare: depot == 'Eiselfing', status != 'Arhivat'
 // ============================================
+// Sincronizare ca la Concedii/Reclamații: aplicația Angajați scrie o copie minimă în
+// angajati_sync/list din acest proiect; aici doar ascultăm documentul (live).
+// Dacă documentul nu există încă, se folosește Cloud Function ca rezervă.
+const LOCATIE_APP = 'Eiselfing';
+function _angDinSync(items) {
+  return (items || [])
+    .filter(it => (it.status || 'Activ') === 'Activ')
+    .filter(it => Array.isArray(it.locatii) && it.locatii.length
+      ? it.locatii.includes(LOCATIE_APP) : it.depot === LOCATIE_APP)
+    .map(it => ({
+      id: it.id,
+      numeComplet: it.nume || it.numeComplet || '—',
+      rol: Array.isArray(it.roluri) ? it.roluri.join(', ') : (it.rol || '')
+    }))
+    .sort((a, b) => a.numeComplet.localeCompare(b.numeComplet));
+}
+
 function loadAngajati() {
-  if (unsubAngajati) clearInterval(unsubAngajati);
+  if (unsubAngajati) { try { unsubAngajati(); } catch(e) {} unsubAngajati = null; }
+
+  const refresh = () => { renderAngajati(); renderDistribuireGrid(); filterAngajatiDropdown(); };
+  let _fallbackStarted = false;
+  function startFallback() {
+    if (_fallbackStarted) return;
+    _fallbackStarted = true;
+    fetchAngajati();
+    const _iv = setInterval(fetchAngajati, 5 * 60 * 1000);
+    const prev = unsubAngajati;
+    unsubAngajati = () => { clearInterval(_iv); if (prev) prev(); };
+  }
+  unsubAngajati = onSnapshot(doc(db, 'angajati_sync', 'list'), snap => {
+    if (!snap.exists()) { startFallback(); return; }
+    angajatiData = _angDinSync(snap.data().items);
+    refresh();
+  }, err => {
+    console.warn('angajati_sync indisponibil, folosesc Cloud Function:', err);
+    startFallback();
+  });
 
   async function fetchAngajati() {
     try {
-      const resp = await fetch(ANGAJATI_FN_URL);
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      const data = await resp.json();
-      angajatiData = data.angajati || [];
-      renderAngajati();
-      renderDistribuireGrid();
-      filterAngajatiDropdown();
+      // endpointul public a fost dezactivat (securitate); lista vine doar din angajati_sync/list
+      throw new Error('lista de angajați nu a fost încă sincronizată din aplicația Angajați');
     } catch(err) {
       console.error('Eroare angajați:', err);
       const grid = document.getElementById('angajati-grid');
       if (grid && !angajatiData.length) {
-        grid.innerHTML = '<div class="loading" style="color:var(--red);">⚠ Nu s-au putut încărca angajații — verifică URL-ul Cloud Function</div>';
+        grid.innerHTML = '<div class="loading" style="color:var(--red);">⚠ Nu s-au putut încărca angajații — așteaptă sincronizarea din aplicația Angajați</div>';
       }
     }
   }
 
-  fetchAngajati(); // inițial
-  unsubAngajati = setInterval(fetchAngajati, 5 * 60 * 1000); // refresh la 5 min
 }
 
 function renderDistribuireGrid() {
@@ -1021,11 +1046,60 @@ window.exportCSV = () => {
 // ============================================
 // RAPORT PERSOANE EISELFING
 // ============================================
+
+// ===== Unire manuală de nume (aceeași persoană scrisă diferit) — nu modifică istoricul, doar afișarea =====
+let aliasMap = {}, _aliasStarted = false;
+const canonName = n => aliasMap[n] || n;
+function startAliases(){
+  if (_aliasStarted) return; _aliasStarted = true;
+  onSnapshot(doc(db,'aliasuri','eiselfing'), snap => {
+    aliasMap = snap.exists() ? (snap.data().map || {}) : {};
+    if (typeof renderRaportEi==='function') { populateRaportEiFilter(); renderRaportEi(); }
+    if (document.getElementById('alias-modal')) window.openAliasModal();
+  }, err => console.warn('aliasuri:', err));
+}
+function _allNames(){
+  const a = new Set(); istoricData.forEach(r => r.angajatNume && a.add(r.angajatNume));
+  angajatiData.forEach(x => x.nume && a.add(x.nume));
+  return [...a].sort((x,y)=>x.localeCompare(y));
+}
+window.openAliasModal = () => {
+  if (!(true)) return;
+  const names = _allNames();
+  const opt = n => '<option value="'+String(n).replace(/"/g,'&quot;')+'">'+n+'</option>';
+  const cur = Object.entries(aliasMap).map(([a,b]) => '<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;"><span>'+a+' → <b>'+b+'</b></span><button class="btn-secondary" onclick="removeAlias(\''+encodeURIComponent(a)+'\')">Desparte</button></div>').join('');
+  let m = document.getElementById('alias-modal');
+  if (!m){ m = document.createElement('div'); m.id='alias-modal'; m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;'; document.body.appendChild(m); }
+  m.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;max-width:560px;width:100%;max-height:90vh;overflow:auto;padding:22px;">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><div style="font-size:18px;font-weight:600;">🔗 Unește nume</div><span style="cursor:pointer;font-size:22px;" onclick="document.getElementById(\'alias-modal\').remove()">&times;</span></div>'+
+    '<div style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Alege numele scris greșit/dublu și numele sub care vrei să apară. Istoricul NU se modifică — doar raportul le adună la un loc și poți desface oricând.</div>'+
+    '<div style="display:grid;gap:8px;"><select class="form-select" id="alias-from"><option value="">— nume de unit —</option>'+names.map(opt).join('')+'</select>'+
+    '<select class="form-select" id="alias-to"><option value="">— se unește în —</option>'+names.map(opt).join('')+'</select>'+
+    '<button class="btn-primary" onclick="addAlias()">Unește</button></div>'+
+    (cur ? '<div style="margin-top:16px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Uniri active</div>'+cur : '')+'</div>';
+};
+window.addAlias = async () => {
+  const a = document.getElementById('alias-from').value, b = document.getElementById('alias-to').value;
+  if (!a || !b || a === b){ showToast('Alege două nume diferite', true); return; }
+  const target = canonName(b);
+  if (target === a){ showToast('Ar crea un cerc', true); return; }
+  const map = { ...aliasMap };
+  Object.keys(map).forEach(k => { if (map[k] === a) map[k] = target; });   // cine arăta spre A, arată acum spre țintă
+  map[a] = target;
+  try { await setDoc(doc(db,'aliasuri','eiselfing'), { map, updatedAt: serverTimestamp() }); showToast('Unit: '+a+' → '+target); }
+  catch(e){ console.error(e); showToast('Eroare la salvare', true); }
+};
+window.removeAlias = async (enc) => {
+  const a = decodeURIComponent(enc); const map = { ...aliasMap }; delete map[a];
+  try { await setDoc(doc(db,'aliasuri','eiselfing'), { map, updatedAt: serverTimestamp() }); showToast('Desfăcut'); }
+  catch(e){ console.error(e); showToast('Eroare', true); }
+};
 function populateRaportEiFilter() {
   const sel = document.getElementById('raport-ei-filter-angajat');
   if (!sel) return;
   const cur = sel.value;
-  const names = [...new Set(istoricData.map(r => r.angajatNume).filter(Boolean))].sort();
+  startAliases();
+  const names = [...new Set(istoricData.map(r => canonName(r.angajatNume)).filter(Boolean))].sort();
   sel.innerHTML = '<option value="">Toți angajații</option>' +
     names.map(n => `<option value="${n}"${n === cur ? ' selected' : ''}>${n}</option>`).join('');
 }
@@ -1036,9 +1110,10 @@ window.renderRaportEi = () => {
   const filtru = document.getElementById('raport-ei-filter-angajat')?.value || '';
   const grupate = {};
   istoricData.forEach(r => {
-    if (filtru && r.angajatNume !== filtru) return;
-    const key = r.angajatId || r.angajatNume;
-    if (!grupate[key]) grupate[key] = { nume: r.angajatNume, items: [] };
+    const cn = canonName(r.angajatNume);
+    if (filtru && cn !== filtru) return;
+    const key = aliasMap[r.angajatNume] ? cn : (r.angajatId || r.angajatNume);
+    if (!grupate[key]) grupate[key] = { nume: cn, items: [] };
     grupate[key].items.push(r);
   });
   const sortati = Object.values(grupate).sort((a, b) => a.nume.localeCompare(b.nume));
@@ -1080,9 +1155,10 @@ window.exportCSVRaportEi = () => {
   const rows = [['Angajat', 'Articol', 'Marime', 'Cantitate']];
   const grupate = {};
   istoricData.forEach(r => {
-    if (filtru && r.angajatNume !== filtru) return;
-    const k = `${r.angajatId}||${r.hainaDenumire}||${r.marime}`;
-    if (!grupate[k]) grupate[k] = { nume: r.angajatNume, haina: r.hainaDenumire, marime: r.marime, cantitate: 0 };
+    const cn = canonName(r.angajatNume);
+    if (filtru && cn !== filtru) return;
+    const k = `${aliasMap[r.angajatNume] ? cn : r.angajatId}||${r.hainaDenumire}||${r.marime}`;
+    if (!grupate[k]) grupate[k] = { nume: cn, haina: r.hainaDenumire, marime: r.marime, cantitate: 0 };
     grupate[k].cantitate += (r.cantitate || 1);
   });
   Object.values(grupate).sort((a, b) => a.nume.localeCompare(b.nume))
