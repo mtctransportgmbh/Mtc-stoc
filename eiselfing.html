@@ -794,7 +794,7 @@ function _angDinSync(items) {
     .map(it => ({
       id: it.id,
       numeComplet: it.nume || it.numeComplet || '—',
-      rol: Array.isArray(it.roluri) ? it.roluri.join(', ') : (it.rol || '')
+      rol: ''   // doar numele, fără rol
     }))
     .sort((a, b) => a.numeComplet.localeCompare(b.numeComplet));
 }

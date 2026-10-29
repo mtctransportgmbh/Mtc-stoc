@@ -1021,7 +1021,7 @@ function _angDinSync(items) {
       id: it.id,
       nume: it.nume || it.numeComplet || '—',
       numeComplet: it.nume || it.numeComplet || '—',
-      rol: Array.isArray(it.roluri) ? it.roluri.join(', ') : (it.rol || '')
+      rol: ''   // doar numele, fără rol
     }))
     .sort((a, b) => a.nume.localeCompare(b.nume));
 }
