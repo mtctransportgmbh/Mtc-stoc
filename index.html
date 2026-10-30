@@ -456,6 +456,12 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
         </div>
 
         <div class="card" style="grid-column:1/-1;">
+          <div class="card-title" style="font-size:18px;">💾 MANAGER BACKUP (pe module)</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">Backup automat la 06:00, 14:00 și 22:00. Restaurezi separat stocul, istoricul, adăugările, comenzile sau doar cantitățile, pentru Ruhstorf și Eiselfing.</p>
+          <button class="btn-action" style="padding:12px 22px;" onclick="openBackupManager()">💾 DESCHIDE MANAGERUL DE BACKUP</button>
+        </div>
+
+        <div class="card" style="grid-column:1/-1;">
           <div class="card-title" style="font-size:18px;">💾 BACKUP STOC</div>
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:12px 16px;background:var(--surface2);border-radius:4px;border:1px solid var(--border);">
             <div style="font-size:20px;">🕐</div>
@@ -487,6 +493,15 @@ else { localStorage.setItem('mtc_app_version', APP_VERSION); }
 </div><!-- /app -->
 
 <!-- Modal Restaurare Backup -->
+<div class="modal-overlay" id="modal-bk">
+  <div class="modal" style="max-width:720px;">
+    <div class="modal-header">
+      <div class="modal-title">💾 MANAGER BACKUP</div>
+      <button class="modal-close" onclick="closeModal('modal-bk')">✕</button>
+    </div>
+    <div class="modal-body" id="bk-body"></div>
+  </div>
+</div>
 <div class="modal-overlay" id="modal-restaurare-backup">
   <div class="modal" style="max-width:600px;">
     <div class="modal-header">
@@ -2221,6 +2236,137 @@ window.showSection = (id,tab) => {
   if (id==='comenzi') window.loadComenzi();
 };
 
+
+/* ======================= MANAGER BACKUP (doar admin) ======================= */
+const BK = { runs:[], cfg:null, runId:null, scope:null, list:[], plan:null };
+const bkLabels = { auto:"automat", manual:"manual", "pre-restore":"înainte de restaurare" };
+const bkEsc = v => String(v==null?"":v).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const bkWhen = iso => new Date(iso).toLocaleString("ro-RO",{timeZone:"Europe/Berlin",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+const bkDay = iso => new Date(iso).toLocaleDateString("ro-RO",{timeZone:"Europe/Berlin",weekday:"long",day:"2-digit",month:"long",year:"numeric"});
+const bkTime = iso => new Date(iso).toLocaleTimeString("ro-RO",{timeZone:"Europe/Berlin",hour:"2-digit",minute:"2-digit"});
+const BK_BTN = 'style="text-align:left;padding:12px;width:100%"';
+function bkShow(html){ document.getElementById("bk-body").innerHTML = html; openModal('modal-bk'); }
+function bkErr(e){ return '<div style="padding:10px;background:#cc33331a;border:1px solid var(--red);border-radius:4px;font-size:13px;color:var(--red)">'+bkEsc(e && e.message || e)+'</div>'; }
+const bkBack = (to) => '<button class="btn-secondary" onclick="'+to+'">← Înapoi</button>';
+window.openBackupManager = async function(){
+  if(currentRole!=="admin") return;
+  bkShow('<div style="color:var(--muted);font-size:13px">Se încarcă lista de backup-uri...</div>');
+  try{
+    const r = await callFn("backupList", {});
+    BK.runs = r.runs||[]; BK.cfg = r.config; bkRenderRuns();
+  }catch(e){
+    bkShow(bkErr(e)+'<div style="font-size:12.5px;color:var(--muted);margin-top:10px">Dacă e prima dată: funcțiile de backup trebuie publicate, iar bucket-ul creat (vezi instrucțiunile primite).</div><div style="margin-top:14px"><button class="btn-secondary" onclick="closeModal(\'modal-bk\')">Închide</button></div>');
+  }
+};
+function bkRenderRuns(){
+  const days = new Map();
+  BK.runs.forEach(r=>{ const d=bkDay(r.createdAt); if(!days.has(d)) days.set(d,[]); days.get(d).push(r); });
+  const sumCounts = c => Object.entries(c||{}).map(([k,v])=>v+" "+((BK.cfg.modules.find(m=>m.id===k)||{}).label||k)).join(" · ");
+  const body = BK.runs.length ? Array.from(days.entries()).map(([d,list])=>
+    '<div style="font-size:12px;font-weight:700;color:var(--muted);margin:12px 0 4px;text-transform:capitalize">'+bkEsc(d)+'</div>'+
+    list.map(r=>'<div style="display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:4px;margin-bottom:5px">'+
+      '<div style="min-width:48px;font-weight:700">'+bkEsc(bkTime(r.createdAt))+'</div>'+
+      '<div style="flex:1;min-width:0;font-size:12px;color:var(--muted)"><span style="font-weight:600;color:var(--text)">'+bkEsc(bkLabels[r.label]||r.label)+'</span>'+
+        (r.skipped&&Object.keys(r.skipped).length?' <span style="color:var(--red)">⚠ module sărite (prea multe documente)</span>':'')+'<br>'+bkEsc(sumCounts(r.counts))+'</div>'+
+      '<button class="btn-action" style="padding:6px 14px;font-size:14px" onclick="bkPick(\''+bkEsc(r.id)+'\')">Alege</button></div>').join("")
+  ).join("") : '<div style="font-size:13px;color:var(--muted);padding:12px 0">Încă nu există backup-uri. Apasă „Fă backup acum”.</div>';
+  bkShow('<div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Se face automat la 06:00, 14:00 și 22:00. Se păstrează toate copiile 14 zile, apoi câte una pe zi până la '+BK.cfg.retention.dailyDays+' de zile. Înainte de orice restaurare se face automat o copie a stării de acum.</div>'+
+    '<button class="btn-action" id="bk-now" onclick="bkNow()">Fă backup acum</button>'+
+    '<div style="max-height:46vh;overflow-y:auto;margin-top:6px">'+body+'</div>'+
+    '<div style="margin-top:14px"><button class="btn-secondary" onclick="closeModal(\'modal-bk\')">Închide</button></div>');
+}
+window.bkNow = async function(){
+  const b=document.getElementById("bk-now"); if(b){ b.disabled=true; b.textContent="Se face backup..."; }
+  try{ await callFn("backupRunNow",{}); showToast("Backup făcut"); openBackupManager(); }
+  catch(e){ if(b){ b.disabled=false; b.textContent="Fă backup acum"; } showToast("Eroare: "+(e.message||e), true); }
+};
+window.bkPick = function(id){
+  BK.runId = id;
+  const r = BK.runs.find(x=>x.id===id);
+  const quick = (BK.cfg.quick||[]);
+  bkShow('<div style="font-size:13px;margin-bottom:12px">Backup din <b>'+bkEsc(bkWhen(r.createdAt))+'</b> ('+bkEsc(bkLabels[r.label]||r.label)+'). Ce vrei să restaurezi?</div>'+
+    '<div style="display:grid;gap:8px">'+
+      '<button class="btn-secondary" '+BK_BTN+' onclick="bkStartModule()"><b>📦 Un modul</b><br><span style="font-size:12px;color:var(--muted)">Stoc, istoric, adăugări, comenzi, angajați sau aliasuri: tot modulul, doar anumite elemente sau doar cantitățile.</span></button>'+
+      quick.map((q,i)=>'<button class="btn-secondary" '+BK_BTN+' onclick="bkQuick('+i+')"><b>🔗 '+bkEsc(q.label)+'</b><br><span style="font-size:12px;color:var(--muted)">'+bkEsc(q.hint)+'</span></button>').join("")+
+    '</div><div style="margin-top:14px">'+bkBack('bkRenderRuns()')+'</div>');
+};
+window.bkQuick = function(i){ bkPreview({multi:BK.cfg.quick[i].multi}); };
+window.bkRenderRuns = bkRenderRuns;
+window.bkFilterList = function(){
+  const q=(document.getElementById("bk-q").value||"").toLowerCase();
+  document.querySelectorAll("#bk-list [data-l]").forEach(el=>{ el.style.display = el.dataset.l.includes(q)?"flex":"none"; });
+};
+function bkListHtml(){
+  return '<input id="bk-q" placeholder="Caută..." oninput="bkFilterList()" style="width:100%;padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);margin-bottom:8px">'+
+    '<div id="bk-list" style="max-height:36vh;overflow-y:auto;border:1px solid var(--border);border-radius:4px">'+
+    BK.list.map((x,i)=>'<label data-l="'+bkEsc((x.label||"").toLowerCase())+'" style="display:flex;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px">'+
+      '<input type="checkbox" name="bk-sel" value="'+i+'"> <span>'+bkEsc(x.label)+'</span></label>').join("")+'</div>';
+}
+const bkField = (label, inner) => '<div style="margin-bottom:12px"><label style="display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">'+label+'</label>'+inner+'</div>';
+const bkSel = 'style="width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:14px"';
+window.bkStartModule = function(){
+  bkShow(bkField('Modul','<select id="bk-mod" '+bkSel+' onchange="bkModChanged()">'+BK.cfg.modules.map(m=>'<option value="'+bkEsc(m.id)+'">'+bkEsc(m.label)+'</option>').join("")+'</select><div id="bk-hint" style="font-size:12px;color:var(--muted);margin-top:4px"></div>')+
+    bkField('Ce restaurezi din el','<select id="bk-mode" '+bkSel+' onchange="bkModeChanged()"></select>')+
+    '<div id="bk-items"></div>'+
+    '<div style="display:flex;gap:8px;margin-top:14px">'+bkBack('bkPick(BK.runId)')+'<button class="btn-action" style="padding:8px 18px;font-size:15px" onclick="bkGoModule()">Previzualizează</button></div>');
+  bkModChanged();
+};
+window.bkModChanged = function(){
+  const m = BK.cfg.modules.find(x=>x.id===document.getElementById("bk-mod").value);
+  document.getElementById("bk-hint").textContent = m.hint||"";
+  document.getElementById("bk-mode").innerHTML = '<option value="all">Tot modulul (toate elementele)</option><option value="items">Doar anumite elemente</option>'+m.fieldsets.map(f=>'<option value="fs:'+bkEsc(f.id)+'">'+bkEsc(f.label)+' (toate elementele)</option>').join("");
+  document.getElementById("bk-items").innerHTML = "";
+};
+window.bkModeChanged = async function(){
+  const box=document.getElementById("bk-items");
+  if(document.getElementById("bk-mode").value!=="items"){ box.innerHTML=""; return; }
+  box.innerHTML='<div style="color:var(--muted);font-size:13px">Se încarcă...</div>';
+  try{
+    const r = await callFn("backupItems",{runId:BK.runId, moduleId:document.getElementById("bk-mod").value}); BK.list=r.items;
+    box.innerHTML = bkListHtml();
+  }catch(e){ box.innerHTML = bkErr(e); }
+};
+window.bkGoModule = function(){
+  const mod=document.getElementById("bk-mod").value, mode=document.getElementById("bk-mode").value;
+  if(mode==="all") return bkPreview({module:mod, mode:"all"});
+  if(mode.startsWith("fs:")) return bkPreview({module:mod, mode:"fieldset", fieldset:mode.slice(3)});
+  const sel=Array.from(document.querySelectorAll('input[name="bk-sel"]:checked')).map(i=>BK.list[+i.value]);
+  if(!sel.length){ showToast("Alege cel puțin un element", true); return; }
+  bkPreview({module:mod, mode:"items", ids:sel.map(x=>({c:x.c,id:x.id}))});
+};
+async function bkPreview(scope){
+  BK.scope = scope;
+  bkShow('<div style="color:var(--muted);font-size:13px">Se compară backup-ul cu starea de acum...</div>');
+  try{
+    const p = await callFn("backupPreview",{runId:BK.runId, scope}); BK.plan = p;
+    const s = p.summary, anyChange = s.create+s.update+s.delete>0;
+    const act = {create:"se recreează", update:"se modifică", delete:"se șterge", skip:"sărit"};
+    const rows = p.items.map(x=>'<div style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:12.5px"><b>'+bkEsc(x.label)+'</b> <span style="color:var(--muted)">· '+bkEsc(act[x.action]||x.action)+'</span>'+
+      (x.note?'<div style="color:var(--muted)">'+bkEsc(x.note)+'</div>':'')+
+      (x.changes||[]).map(c=>'<div style="color:var(--muted);margin-top:2px"><code>'+bkEsc(c.field)+'</code>: acum <b style="color:var(--text)">'+bkEsc(c.current==null?"(gol)":c.current)+'</b> → în backup <b style="color:var(--accent2)">'+bkEsc(c.backup==null?"(gol)":c.backup)+'</b></div>').join("")+'</div>').join("");
+    bkShow('<div style="font-size:13px;margin-bottom:10px">Din backup-ul <b>'+bkEsc(bkWhen(BK.runs.find(x=>x.id===BK.runId).createdAt))+'</b>:</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:12.5px"><span style="padding:3px 9px;border-radius:4px;background:#c9a92e22">'+s.update+' de modificat</span><span style="padding:3px 9px;border-radius:4px;background:#c9a92e22">'+s.create+' de recreat</span><span style="padding:3px 9px;border-radius:4px;background:var(--surface2)">'+s.same+' identice</span>'+(s.skipped?'<span style="padding:3px 9px;border-radius:4px;background:var(--surface2)">'+s.skipped+' sărite</span>':'')+'</div>'+
+      (p.warnings.length?'<div style="padding:8px 10px;background:var(--surface2);border-radius:4px;font-size:12.5px;margin-bottom:10px">'+p.warnings.map(w=>'<div>⚠️ '+bkEsc(w)+'</div>').join("")+'</div>':'')+
+      (rows?'<div style="max-height:34vh;overflow-y:auto;border:1px solid var(--border);border-radius:4px">'+rows+'</div>':'<div style="font-size:13px;color:var(--muted)">Nu e nicio diferență: starea de acum e identică cu backup-ul.</div>')+
+      (p.truncated?'<div style="font-size:12px;color:var(--muted);margin-top:4px">Se afișează primele elemente; restaurarea le include pe toate.</div>':'')+
+      (scope.mode==="all"&&s.delete>0?'<label style="display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:12.5px;cursor:pointer"><input type="checkbox" id="bk-del"> <span><b style="color:var(--red)">Șterge și cele '+s.delete+' elemente create după acest backup</b> (implicit rămân neatinse)</span></label>':'')+
+      '<div style="font-size:12px;color:var(--muted);margin-top:12px">Înainte de restaurare se face automat un backup al stării de acum, ca să poți reveni.</div>'+
+      '<div style="display:flex;gap:8px;margin-top:14px">'+bkBack('bkPick(BK.runId)')+(anyChange?'<button class="btn-danger" style="padding:9px 18px;font-size:14px" id="bk-go" onclick="bkConfirm()">Restaurează</button>':'')+'</div>');
+  }catch(e){ bkShow(bkErr(e)+'<div style="margin-top:14px">'+bkBack('bkPick(BK.runId)')+'</div>'); }
+}
+let _bkArmed=false;
+window.bkConfirm = async function(){
+  const b=document.getElementById("bk-go");
+  if(!_bkArmed){ _bkArmed=true; b.textContent="Apasă încă o dată pentru a confirma"; setTimeout(()=>{ _bkArmed=false; const x=document.getElementById("bk-go"); if(x) x.textContent="Restaurează"; },5000); return; }
+  _bkArmed=false; b.disabled=true; b.textContent="Se restaurează...";
+  try{
+    const del = !!(document.getElementById("bk-del")&&document.getElementById("bk-del").checked);
+    const r = await callFn("backupRestore",{runId:BK.runId, scope:BK.scope, confirm:true, deleteExtra:del});
+    const x=r.result;
+    bkShow('<div style="font-size:14px;margin-bottom:8px">✅ Restaurare terminată.</div><div style="font-size:13px;color:var(--muted)">'+x.updated+' modificate · '+x.created+' recreate · '+x.deleted+' șterse'+(x.skipped?' · '+x.skipped+' sărite':'')+'.<br>Starea de dinainte e salvată automat în backup-ul „înainte de restaurare”, deci poți reveni.</div><div style="margin-top:14px"><button class="btn-action" style="padding:8px 18px;font-size:15px" onclick="openBackupManager()">Gata</button></div>');
+  }catch(e){ bkShow(bkErr(e)+'<div style="margin-top:14px">'+bkBack('bkPick(BK.runId)')+'</div>'); }
+};
+
 window.openModal = id => {
   document.getElementById(id)?.classList.add('open');
   if (id==='modal-restaurare-backup') window.incarcaListaBackupuri();
@@ -2259,7 +2405,7 @@ function downloadCSV(rows,filename){
 </script>
 <!--MTC-UPDATE-START-->
 <script id="mtc-update">
-/*MTC_VERSION*/const MTC_APP_VERSION='20261030-112228';
+/*MTC_VERSION*/const MTC_APP_VERSION='20261030-155944';
 (function(){
   var V=MTC_APP_VERSION, busy=false, shown=false, lastIdx=0;
   window.MTC_APP_VERSION=V;
@@ -2345,6 +2491,7 @@ function downloadCSV(rows,filename){
 })();
 </script>
 <!--MTC-UPDATE-END-->
+
 
 </body>
 </html>
