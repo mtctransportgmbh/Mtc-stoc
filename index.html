@@ -2271,10 +2271,16 @@ function bkRenderRuns(){
       '<button class="btn-action" style="padding:6px 14px;font-size:14px" onclick="bkPick(\''+bkEsc(r.id)+'\')">Alege</button></div>').join("")
   ).join("") : '<div style="font-size:13px;color:var(--muted);padding:12px 0">Încă nu există backup-uri. Apasă „Fă backup acum”.</div>';
   bkShow('<div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Se face automat la 06:00, 14:00 și 22:00. Se păstrează toate copiile 14 zile, apoi câte una pe zi până la '+BK.cfg.retention.dailyDays+' de zile. Înainte de orice restaurare se face automat o copie a stării de acum.</div>'+
-    '<button class="btn-action" id="bk-now" onclick="bkNow()">Fă backup acum</button>'+
+    '<button class="btn-action" id="bk-now" onclick="bkNow()">Fă backup acum</button> <button class="btn-secondary" id="bk-mail" onclick="bkTestMail()">✉ Trimite email de test</button>'+
     '<div style="max-height:46vh;overflow-y:auto;margin-top:6px">'+body+'</div>'+
     '<div style="margin-top:14px"><button class="btn-secondary" onclick="closeModal(\'modal-bk\')">Închide</button></div>');
 }
+window.bkTestMail = async function(){
+  const b=document.getElementById("bk-mail"); if(b){ b.disabled=true; b.textContent="Se trimite..."; }
+  try{ await callFn("backupTestAlert",{}); showToast("Email de test trimis. Verifică inbox-ul."); }
+  catch(e){ showToast("Eroare: "+(e.message||e), true); }
+  if(b){ b.disabled=false; b.textContent="✉ Trimite email de test"; }
+};
 window.bkNow = async function(){
   const b=document.getElementById("bk-now"); if(b){ b.disabled=true; b.textContent="Se face backup..."; }
   try{ await callFn("backupRunNow",{}); showToast("Backup făcut"); openBackupManager(); }
@@ -2405,7 +2411,7 @@ function downloadCSV(rows,filename){
 </script>
 <!--MTC-UPDATE-START-->
 <script id="mtc-update">
-/*MTC_VERSION*/const MTC_APP_VERSION='20261030-155944';
+/*MTC_VERSION*/const MTC_APP_VERSION='20261030-161807';
 (function(){
   var V=MTC_APP_VERSION, busy=false, shown=false, lastIdx=0;
   window.MTC_APP_VERSION=V;
@@ -2491,6 +2497,7 @@ function downloadCSV(rows,filename){
 })();
 </script>
 <!--MTC-UPDATE-END-->
+
 
 
 </body>
